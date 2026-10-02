@@ -358,7 +358,11 @@
     function llenarSelect(sel, items, placeholder, opcionNo) {
       var previo = sel.value;
       while (sel.firstChild) sel.removeChild(sel.firstChild);
-      sel.appendChild(crearOpcion('', placeholder));
+      // Texto guía: se ve cuando no hay nada elegido, pero no aparece como opción en la lista
+      var guia = crearOpcion('', placeholder);
+      guia.disabled = true;
+      guia.hidden = true;
+      sel.appendChild(guia);
       items.forEach(function (t) { sel.appendChild(crearOpcion(t, t)); });
       sel.appendChild(crearOpcion(opcionNo, opcionNo));
       elegir(sel, previo);
@@ -366,7 +370,7 @@
 
     function elegir(sel, valor) {
       sel.value = valor;
-      if (sel.value !== valor) sel.value = '';
+      if (!valor || sel.value !== valor) sel.selectedIndex = 0;
     }
 
     function configurarLibre(input, label, soloNumeros, textoNum, textoLibre) {
@@ -503,8 +507,8 @@
     }
 
     function limpiarFormulario() {
-      el('equipo').value = '';
-      el('tipo').value = '';
+      elegir(el('equipo'), '');
+      elegir(el('tipo'), '');
       el('horas').value = '';
       ponerFoto('equipo', 'Equipo', '');
       ponerFoto('horometro', 'Horometro', '');

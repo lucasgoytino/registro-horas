@@ -2,7 +2,7 @@
  * Service worker: guarda la app en el celular para que abra sin señal.
  * Cuando cambies index.html, subí también este archivo con VERSION aumentada (v2, v3...).
  */
-var VERSION = 'pecom-horas-v2';
+var VERSION = 'pecom-horas-v3';
 var ARCHIVOS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 var TAILWIND = 'https://cdn.tailwindcss.com';
 
