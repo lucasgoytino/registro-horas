@@ -1,0 +1,16 @@
+{
+  "name": "PECOM Registro de Horas",
+  "short_name": "Horas PECOM",
+  "description": "Registro de horas de funcionamiento de equipos, con o sin señal.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f1f5f9",
+  "theme_color": "#16a34a",
+  "lang": "es",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

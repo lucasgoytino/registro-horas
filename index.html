@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#16a34a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Horas PECOM">
+  <title>Registro de Horas PECOM</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tap { min-height: 48px; }
+    input, select { font-size: 16px; }
+    /* Respaldo por si Tailwind no llegó a cargarse sin señal */
+    .hidden { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen">
+
+  <header class="sticky top-0 z-10 bg-white border-b border-slate-200">
+    <div class="max-w-xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <h1 class="text-lg font-bold leading-tight">Registro de horas</h1>
+        <p class="text-xs text-slate-600 flex items-center gap-1">
+          <span id="puntoConexion" class="inline-block w-2 h-2 rounded-full bg-slate-400"></span>
+          <span id="txtConexion">Comprobando conexión...</span>
+        </p>
+      </div>
+      <button id="btnSync" type="button" aria-label="Sincronizar listas y enviar pendientes"
+        class="tap min-w-[48px] px-3 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium flex items-center gap-2 active:bg-slate-100 disabled:opacity-60">
+        <span id="iconSync" aria-hidden="true" class="text-xl leading-none">&#x21bb;</span>
+        <span class="text-sm">Sincronizar</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-xl mx-auto px-4 py-4 pb-12">
+    <div id="avisoListas" class="hidden mb-4 rounded-lg p-3 text-sm whitespace-pre-line"></div>
+
+    <form id="form" class="bg-white rounded-xl shadow-sm p-4 space-y-4" novalidate autocomplete="off">
+      <div id="bannerEdicion" class="hidden rounded-lg bg-blue-50 border border-blue-300 text-blue-800 p-3 text-sm">
+        <div class="flex items-center justify-between gap-3">
+          <span class="font-semibold">Editando un registro pendiente</span>
+          <button id="btnCancelarEdicion" type="button" class="tap px-3 rounded-lg border border-blue-300 bg-white font-medium">Cancelar</button>
+        </div>
+      </div>
+
+      <div>
+        <span class="block text-sm font-semibold mb-1">Fecha</span>
+        <div id="fecha" class="tap flex items-center px-3 rounded-lg bg-slate-100 text-slate-600"></div>
+        <p class="text-xs text-slate-500 mt-1">Se completa sola con la hora del celular al agregar el registro.</p>
+      </div>
+
+      <div>
+        <label for="equipo" class="block text-sm font-semibold mb-1">Equipo</label>
+        <select id="equipo" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white">
+          <option value="">Cargando...</option>
+        </select>
+        <div id="boxEquipoLibre" class="hidden mt-2">
+          <label for="equipoLibre" id="lblEquipoLibre" class="block text-sm mb-1">Número del equipo (solo números)</label>
+          <input id="equipoLibre" type="text" inputmode="numeric" maxlength="100"
+            class="tap w-full px-3 rounded-lg border border-amber-400 bg-amber-50">
+        </div>
+      </div>
+
+      <div>
+        <label for="tipo" class="block text-sm font-semibold mb-1">Tipo de Equipo</label>
+        <select id="tipo" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white">
+          <option value="">Cargando...</option>
+        </select>
+        <div id="boxTipoLibre" class="hidden mt-2">
+          <label for="tipoLibre" id="lblTipoLibre" class="block text-sm mb-1">Descripción del tipo de equipo</label>
+          <input id="tipoLibre" type="text" maxlength="100"
+            class="tap w-full px-3 rounded-lg border border-amber-400 bg-amber-50">
+        </div>
+      </div>
+
+      <div>
+        <label for="horas" class="block text-sm font-semibold mb-1">Horas Registradas</label>
+        <input id="horas" type="text" inputmode="decimal" placeholder="Ej: 1250.5"
+          class="tap w-full px-3 rounded-lg border border-slate-300">
+      </div>
+
+      <div>
+        <label for="usuario" class="block text-sm font-semibold mb-1">Usuario</label>
+        <input id="usuario" type="text" maxlength="100" placeholder="Nombre y apellido"
+          class="tap w-full px-3 rounded-lg border border-slate-300">
+      </div>
+
+      <div>
+        <label for="telefono" class="block text-sm font-semibold mb-1">Teléfono de contacto</label>
+        <input id="telefono" type="tel" inputmode="tel" maxlength="25" placeholder="Ej: +54 9 11 1234 5678"
+          class="tap w-full px-3 rounded-lg border border-slate-300">
+      </div>
+
+      <div>
+        <span class="block text-sm font-semibold mb-1">Foto del equipo completo</span>
+        <div class="grid grid-cols-2 gap-2">
+          <label for="fotoEquipoCam"
+            class="tap flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-400 bg-slate-50 text-slate-700 font-medium cursor-pointer active:bg-slate-100">
+            <span aria-hidden="true">&#x1F4F7;</span><span>Cámara</span>
+          </label>
+          <label for="fotoEquipoGal"
+            class="tap flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-400 bg-slate-50 text-slate-700 font-medium cursor-pointer active:bg-slate-100">
+            <span aria-hidden="true">&#x1F5BC;&#xFE0F;</span><span>Galería</span>
+          </label>
+        </div>
+        <input id="fotoEquipoCam" type="file" accept="image/*" capture="environment" class="sr-only">
+        <input id="fotoEquipoGal" type="file" accept="image/*" class="sr-only">
+        <p id="txtFotoEquipo" class="text-xs text-slate-500 mt-1"></p>
+        <div id="boxFotoEquipo" class="hidden mt-2">
+          <div class="flex items-center gap-3">
+            <img id="prevFotoEquipo" alt="Vista previa de la foto del equipo" class="h-20 w-20 object-cover rounded-lg border border-slate-300">
+            <button id="quitarFotoEquipo" type="button" class="tap px-4 rounded-lg text-red-600 font-medium active:bg-red-50">Quitar foto</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <span class="block text-sm font-semibold mb-1">Foto de las horas del horómetro</span>
+        <div class="grid grid-cols-2 gap-2">
+          <label for="fotoHorometroCam"
+            class="tap flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-400 bg-slate-50 text-slate-700 font-medium cursor-pointer active:bg-slate-100">
+            <span aria-hidden="true">&#x1F4F7;</span><span>Cámara</span>
+          </label>
+          <label for="fotoHorometroGal"
+            class="tap flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-400 bg-slate-50 text-slate-700 font-medium cursor-pointer active:bg-slate-100">
+            <span aria-hidden="true">&#x1F5BC;&#xFE0F;</span><span>Galería</span>
+          </label>
+        </div>
+        <input id="fotoHorometroCam" type="file" accept="image/*" capture="environment" class="sr-only">
+        <input id="fotoHorometroGal" type="file" accept="image/*" class="sr-only">
+        <p id="txtFotoHorometro" class="text-xs text-slate-500 mt-1"></p>
+        <div id="boxFotoHorometro" class="hidden mt-2">
+          <div class="flex items-center gap-3">
+            <img id="prevFotoHorometro" alt="Vista previa de la foto del horómetro" class="h-20 w-20 object-cover rounded-lg border border-slate-300">
+            <button id="quitarFotoHorometro" type="button" class="tap px-4 rounded-lg text-red-600 font-medium active:bg-red-50">Quitar foto</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="errorForm" class="hidden rounded-lg bg-red-50 border border-red-300 text-red-700 p-3 text-sm whitespace-pre-line"></div>
+
+      <button id="btnAgregar" type="submit"
+        class="tap w-full rounded-lg border-2 border-blue-600 text-blue-700 font-semibold active:bg-blue-50">
+        + Agregar a la lista
+      </button>
+    </form>
+
+    <section class="mt-5">
+      <h2 class="text-sm font-semibold text-slate-600">Registros en este celular (<span id="contador">0</span>)</h2>
+      <p class="text-xs text-slate-500 mb-2">Quedan guardados aunque cierres la app o te quedes sin señal.</p>
+      <p id="listaVacia" class="text-sm text-slate-500">Todavía no agregaste registros.</p>
+      <ul id="lista" class="space-y-2"></ul>
+    </section>
+
+    <button id="btnEnviar" type="button"
+      class="tap w-full mt-5 py-4 rounded-xl bg-green-600 text-white text-lg font-bold shadow-md active:bg-green-700 disabled:opacity-60">
+      Enviar todo
+    </button>
+
+    <div id="resultado" role="status" aria-live="polite"
+      class="hidden mt-3 rounded-xl p-4 font-semibold whitespace-pre-line"></div>
+  </main>
+
+  <script>
+    var APP = {
+      // Pegá acá la URL de la aplicación web de Apps Script (termina en /exec)
+      API_URL: 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnRmc61wZsb0K1ZxJnx5o0p0zS3u8HuArTSu2liORhRQssPt2h0DdPLy5caOBSl6rQJeQZMsnIqhtXEnP0rueZIQaCVFQHh2nYvDi_S_B61BZl4NdmpeHS71jaN4ksU79d7Ho5K1wfZiWCVrF1rK2LAFdB81r3xOkGG3cpv05PmxcoXqVrtG-IWTXWstLv32hROAnIQX_s8VLxfcttm5eoeopKM2SBcklpIuTCqumMVTuIO41fefx_7HJl7jspY8PAQm9wpajfLktAEz1ztqBZIL50V6dw&lib=Mf9CSoSY8mDIb6rd9ix9MEs9tXLLBwId2',
+      TIMEOUT_LISTAS_MS: 20000,
+      TIMEOUT_ENVIO_MS: 120000,
+      REINTENTO_MS: 60000
+    };
+
+    var estado = {
+      opciones: {
+        noEquipo: 'No encontré el Equipo', noTipo: 'No encontré el Tipo de Equipo',
+        soloNumEquipo: true, soloNumTipo: false,
+        fotosObligatorias: true, fotoLadoMax: 1280, fotoCalidad: 0.7, maxFilas: 15
+      },
+      fotos: { equipo: '', horometro: '' },
+      procesandoFotos: 0,
+      pendientes: [],
+      editandoId: null,
+      editandoCreado: null,
+      enviando: false,
+      cargandoListas: false
+    };
+
+    function el(id) { return document.getElementById(id); }
+    function mostrar(nodo, visible) { nodo.classList.toggle('hidden', !visible); }
+    function mensaje(e) { return (e && e.message) ? e.message : String(e); }
+    function dos(n) { return n < 10 ? '0' + n : String(n); }
+    function formatoFecha(ms) {
+      var d = new Date(ms);
+      return dos(d.getDate()) + '/' + dos(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + dos(d.getHours()) + ':' + dos(d.getMinutes());
+    }
+    function generarId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+    }
+    function urlConfigurada() { return APP.API_URL.indexOf('https://script.google.com/') === 0; }
+
+    /* ---------- Base de datos local (IndexedDB): los registros sobreviven sin señal y al cerrar la app ---------- */
+
+    var DB = {
+      conexion: null,
+      abrir: function () {
+        if (DB.conexion) return Promise.resolve(DB.conexion);
+        return new Promise(function (resolver, rechazar) {
+          var pedido = indexedDB.open('pecom-horas', 1);
+          pedido.onupgradeneeded = function () { pedido.result.createObjectStore('pendientes', { keyPath: 'id' }); };
+          pedido.onsuccess = function () { DB.conexion = pedido.result; resolver(DB.conexion); };
+          pedido.onerror = function () { rechazar(pedido.error); };
+        });
+      },
+      operar: function (modo, accion) {
+        return DB.abrir().then(function (db) {
+          return new Promise(function (resolver, rechazar) {
+            var tx = db.transaction('pendientes', modo);
+            var pedido = accion(tx.objectStore('pendientes'));
+            tx.oncomplete = function () { resolver(pedido ? pedido.result : undefined); };
+            tx.onerror = function () { rechazar(tx.error); };
+            tx.onabort = function () { rechazar(tx.error || new Error('Operación cancelada')); };
+          });
+        });
+      },
+      todos: function () { return DB.operar('readonly', function (s) { return s.getAll(); }); },
+      guardar: function (registro) { return DB.operar('readwrite', function (s) { return s.put(registro); }); },
+      guardarVarios: function (registros) {
+        return DB.operar('readwrite', function (s) { registros.forEach(function (r) { s.put(r); }); return null; });
+      },
+      borrarVarios: function (ids) {
+        return DB.operar('readwrite', function (s) { ids.forEach(function (id) { s.delete(id); }); return null; });
+      }
+    };
+
+    function pedirPersistencia() {
+      try {
+        if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+      } catch (e) {}
+    }
+
+    /* ---------- Conexión con Apps Script ---------- */
+
+    function pedirJson(url, opciones, ms) {
+      var ctrl = window.AbortController ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms);
+      if (ctrl) opciones.signal = ctrl.signal;
+      return fetch(url, opciones).then(function (r) {
+        clearTimeout(timer);
+        return r.text().then(function (texto) {
+          try {
+            return JSON.parse(texto);
+          } catch (e) {
+            var err = new Error('El servidor respondió algo inesperado. Revisá que la implementación de Apps Script tenga acceso "Cualquier persona".');
+            err.config = true;
+            throw err;
+          }
+        });
+      }, function (e) {
+        clearTimeout(timer);
+        var err = new Error('Sin conexión');
+        err.red = true;
+        throw err;
+      });
+    }
+
+    function marcarConexion(enLinea) {
+      el('puntoConexion').className = 'inline-block w-2 h-2 rounded-full ' + (enLinea ? 'bg-green-500' : 'bg-amber-500');
+      el('txtConexion').textContent = enLinea ? 'Con conexión' : 'Sin conexión: se guarda en el celular';
+    }
+
+    /* ---------- Listas ---------- */
+
+    function leerListasGuardadas() {
+      try { return JSON.parse(localStorage.getItem('pecom_listas') || 'null'); } catch (e) { return null; }
+    }
+
+    function guardarListas(r) {
+      try {
+        localStorage.setItem('pecom_listas', JSON.stringify({
+          equipos: r.equipos, tipos: r.tipos, opciones: r.opciones, aviso: r.aviso, fecha: Date.now()
+        }));
+      } catch (e) {}
+    }
+
+    function cargarListas(manual) {
+      if (estado.cargandoListas) return Promise.resolve();
+      if (!urlConfigurada()) {
+        avisoListas('error', 'Falta configurar la URL de Apps Script en el archivo index.html (APP.API_URL).');
+        return Promise.resolve();
+      }
+      estado.cargandoListas = true;
+      girarSync(true);
+      return pedirJson(APP.API_URL + '?accion=listas', { method: 'GET' }, APP.TIMEOUT_LISTAS_MS)
+        .then(function (r) {
+          marcarConexion(true);
+          if (!r || !r.ok) {
+            avisoListas('error', (r && r.error) || 'No se pudieron leer las listas.');
+            return;
+          }
+          guardarListas(r);
+          aplicarListas(r);
+          if (r.aviso) avisoListas('warn', r.aviso);
+          else if (manual) avisoListas('ok', 'Listas actualizadas: ' + r.equipos.length + ' equipos y ' + r.tipos.length + ' tipos.');
+          else mostrar(el('avisoListas'), false);
+        })
+        .catch(function (e) {
+          if (e.red) marcarConexion(false);
+          var guardadas = leerListasGuardadas();
+          if (e.config) avisoListas('error', e.message);
+          else if (guardadas) avisoListas('warn', 'Sin conexión: usando las listas guardadas el ' + formatoFecha(guardadas.fecha) + '.');
+          else avisoListas('error', 'Sin conexión y sin listas guardadas. Abrí la app una vez con señal para descargar las listas.');
+        })
+        .then(function () {
+          estado.cargandoListas = false;
+          girarSync(false);
+        });
+    }
+
+    function girarSync(activo) {
+      el('btnSync').disabled = activo;
+      el('iconSync').classList.toggle('animate-spin', activo);
+    }
+
+    function aplicarListas(r) {
+      estado.opciones = r.opciones;
+      llenarSelect(el('equipo'), r.equipos, 'Seleccioná un equipo', r.opciones.noEquipo);
+      llenarSelect(el('tipo'), r.tipos, 'Seleccioná un tipo de equipo', r.opciones.noTipo);
+      configurarLibre(el('equipoLibre'), el('lblEquipoLibre'), r.opciones.soloNumEquipo, 'Número del equipo', 'Descripción del equipo');
+      configurarLibre(el('tipoLibre'), el('lblTipoLibre'), r.opciones.soloNumTipo, 'Número del tipo de equipo', 'Descripción del tipo de equipo');
+      actualizarLibres();
+    }
+
+    function avisoListas(tipo, texto) {
+      var clases = {
+        error: 'bg-red-50 border border-red-300 text-red-700',
+        warn: 'bg-amber-50 border border-amber-300 text-amber-800',
+        ok: 'bg-green-50 border border-green-300 text-green-800'
+      };
+      var nodo = el('avisoListas');
+      nodo.className = 'mb-4 rounded-lg p-3 text-sm whitespace-pre-line ' + clases[tipo];
+      nodo.textContent = texto;
+    }
+
+    function crearOpcion(valor, texto) {
+      var o = document.createElement('option');
+      o.value = valor;
+      o.textContent = texto;
+      return o;
+    }
+
+    function llenarSelect(sel, items, placeholder, opcionNo) {
+      var previo = sel.value;
+      while (sel.firstChild) sel.removeChild(sel.firstChild);
+      sel.appendChild(crearOpcion('', placeholder));
+      items.forEach(function (t) { sel.appendChild(crearOpcion(t, t)); });
+      sel.appendChild(crearOpcion(opcionNo, opcionNo));
+      elegir(sel, previo);
+    }
+
+    function elegir(sel, valor) {
+      sel.value = valor;
+      if (sel.value !== valor) sel.value = '';
+    }
+
+    function configurarLibre(input, label, soloNumeros, textoNum, textoLibre) {
+      input.setAttribute('inputmode', soloNumeros ? 'numeric' : 'text');
+      label.textContent = soloNumeros ? textoNum + ' (solo números)' : textoLibre;
+    }
+
+    function actualizarLibres() {
+      var eqLibre = el('equipo').value === estado.opciones.noEquipo;
+      var tiLibre = el('tipo').value === estado.opciones.noTipo;
+      mostrar(el('boxEquipoLibre'), eqLibre);
+      mostrar(el('boxTipoLibre'), tiLibre);
+      if (!eqLibre) el('equipoLibre').value = '';
+      if (!tiLibre) el('tipoLibre').value = '';
+    }
+
+    function filtrarDigitos(input, activo) {
+      input.addEventListener('input', function () {
+        if (!activo()) return;
+        var limpio = input.value.replace(/[^0-9]/g, '');
+        if (limpio !== input.value) input.value = limpio;
+      });
+    }
+
+    /* ---------- Fotos ---------- */
+
+    // Achica la foto en el celular (JPEG, lado máximo configurable) para que ocupe poco y se envíe rápido.
+    function comprimirFoto(archivo, callback) {
+      var url = URL.createObjectURL(archivo);
+      var img = new Image();
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        callback(null);
+      };
+      img.onload = function () {
+        var max = estado.opciones.fotoLadoMax || 1280;
+        var escala = Math.min(1, max / Math.max(img.width, img.height));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * escala);
+        canvas.height = Math.round(img.height * escala);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        callback(canvas.toDataURL('image/jpeg', estado.opciones.fotoCalidad || 0.7));
+      };
+      img.src = url;
+    }
+
+    // Cada foto tiene dos entradas: Cámara (capture) y Galería (sin capture). Las dos cargan la misma foto.
+    function configurarFoto(clave, sufijo) {
+      ['Cam', 'Gal'].forEach(function (origen) {
+        var input = el('foto' + sufijo + origen);
+        input.addEventListener('change', function () {
+          var archivo = input.files && input.files[0];
+          if (!archivo) return;
+          estado.procesandoFotos++;
+          el('txtFoto' + sufijo).textContent = 'Procesando foto...';
+          comprimirFoto(archivo, function (dataUrl) {
+            estado.procesandoFotos--;
+            input.value = '';
+            if (!dataUrl) {
+              ponerFoto(clave, sufijo, '');
+              el('errorForm').textContent = 'No se pudo leer la foto. Probá de nuevo.';
+              mostrar(el('errorForm'), true);
+              return;
+            }
+            ponerFoto(clave, sufijo, dataUrl);
+          });
+        });
+      });
+      el('quitarFoto' + sufijo).addEventListener('click', function () { ponerFoto(clave, sufijo, ''); });
+    }
+
+    function ponerFoto(clave, sufijo, dataUrl) {
+      estado.fotos[clave] = dataUrl;
+      el('txtFoto' + sufijo).textContent = dataUrl ? 'Foto cargada. Podés cambiarla con Cámara o Galería.' : '';
+      if (dataUrl) el('prevFoto' + sufijo).src = dataUrl;
+      else el('prevFoto' + sufijo).removeAttribute('src');
+      mostrar(el('boxFoto' + sufijo), !!dataUrl);
+    }
+
+    /* ---------- Formulario ---------- */
+
+    function leerFormulario() {
+      var f = {
+        equipo: el('equipo').value,
+        equipoLibre: el('equipoLibre').value.trim(),
+        tipo: el('tipo').value,
+        tipoLibre: el('tipoLibre').value.trim(),
+        horas: el('horas').value.trim().replace(',', '.'),
+        usuario: el('usuario').value.trim(),
+        telefono: el('telefono').value.trim(),
+        fotoEquipo: estado.fotos.equipo,
+        fotoHorometro: estado.fotos.horometro
+      };
+      var err = [];
+      var op = estado.opciones;
+
+      if (estado.procesandoFotos > 0) err.push('Esperá a que terminen de procesarse las fotos.');
+
+      if (!f.equipo) err.push('Elegí un equipo.');
+      else if (f.equipo === op.noEquipo) {
+        if (!f.equipoLibre) err.push('Escribí el equipo que no encontraste.');
+        else if (op.soloNumEquipo && /[^0-9]/.test(f.equipoLibre)) err.push('El equipo no encontrado solo admite números.');
+      }
+
+      if (!f.tipo) err.push('Elegí un tipo de equipo.');
+      else if (f.tipo === op.noTipo) {
+        if (!f.tipoLibre) err.push('Escribí el tipo de equipo que no encontraste.');
+        else if (op.soloNumTipo && /[^0-9]/.test(f.tipoLibre)) err.push('El tipo de equipo no encontrado solo admite números.');
+      }
+
+      if (!f.horas) err.push('Ingresá las horas registradas.');
+      else if (/[^0-9.]/.test(f.horas) || f.horas.split('.').length > 2 || isNaN(Number(f.horas))) {
+        err.push('Las horas deben ser un número (ej: 12 o 12.5).');
+      }
+
+      if (!f.usuario) err.push('Ingresá tu nombre de usuario.');
+
+      var digitos = f.telefono.replace(/[^0-9]/g, '').length;
+      if (!f.telefono) err.push('Ingresá un teléfono de contacto.');
+      else if (/[^0-9+()\s-]/.test(f.telefono) || digitos < 6 || digitos > 20) err.push('El teléfono no es válido.');
+
+      if (op.fotosObligatorias) {
+        if (!f.fotoEquipo) err.push('Falta la foto del equipo completo.');
+        if (!f.fotoHorometro) err.push('Falta la foto del horómetro.');
+      }
+
+      return { fila: f, errores: err };
+    }
+
+    function formTieneDatos() {
+      return !!(el('equipo').value || el('tipo').value || el('horas').value.trim() ||
+        estado.fotos.equipo || estado.fotos.horometro);
+    }
+
+    function limpiarFormulario() {
+      el('equipo').value = '';
+      el('tipo').value = '';
+      el('horas').value = '';
+      ponerFoto('equipo', 'Equipo', '');
+      ponerFoto('horometro', 'Horometro', '');
+      actualizarLibres();
+      mostrar(el('errorForm'), false);
+    }
+
+    /** Guarda el formulario en el celular. Devuelve una promesa con true/false. */
+    function agregarDesdeFormulario() {
+      var r = leerFormulario();
+      if (r.errores.length) {
+        el('errorForm').textContent = r.errores.join('\n');
+        mostrar(el('errorForm'), true);
+        return Promise.resolve(false);
+      }
+      mostrar(el('errorForm'), false);
+
+      var registro = r.fila;
+      registro.id = estado.editandoId || generarId();
+      registro.creado = estado.editandoId ? estado.editandoCreado : Date.now();
+      registro.enCola = false;
+      registro.error = '';
+
+      return DB.guardar(registro)
+        .then(function () {
+          recordarContacto();
+          pedirPersistencia();
+          salirDeEdicion();
+          limpiarFormulario();
+          return recargarPendientes();
+        })
+        .then(function () { return true; })
+        .catch(function (e) {
+          el('errorForm').textContent = 'No se pudo guardar en el celular: ' + mensaje(e);
+          mostrar(el('errorForm'), true);
+          return false;
+        });
+    }
+
+    /* ---------- Edición de un pendiente ---------- */
+
+    function editar(id) {
+      var p = buscarPendiente(id);
+      if (!p) return;
+      estado.editandoId = p.id;
+      estado.editandoCreado = p.creado;
+      elegir(el('equipo'), p.equipo);
+      elegir(el('tipo'), p.tipo);
+      actualizarLibres();
+      el('equipoLibre').value = p.equipoLibre || '';
+      el('tipoLibre').value = p.tipoLibre || '';
+      el('horas').value = p.horas;
+      el('usuario').value = p.usuario;
+      el('telefono').value = p.telefono;
+      ponerFoto('equipo', 'Equipo', p.fotoEquipo || '');
+      ponerFoto('horometro', 'Horometro', p.fotoHorometro || '');
+      el('fecha').textContent = formatoFecha(p.creado);
+      el('btnAgregar').textContent = 'Guardar cambios';
+      mostrar(el('bannerEdicion'), true);
+      if (p.error) {
+        el('errorForm').textContent = 'Corregí: ' + p.error;
+        mostrar(el('errorForm'), true);
+      }
+      renderLista();
+      window.scrollTo(0, 0);
+    }
+
+    function salirDeEdicion() {
+      estado.editandoId = null;
+      estado.editandoCreado = null;
+      el('btnAgregar').textContent = '+ Agregar a la lista';
+      mostrar(el('bannerEdicion'), false);
+      actualizarReloj();
+    }
+
+    function buscarPendiente(id) {
+      for (var i = 0; i < estado.pendientes.length; i++) {
+        if (estado.pendientes[i].id === id) return estado.pendientes[i];
+      }
+      return null;
+    }
+
+    function quitar(id) {
+      if (!confirm('¿Borrar este registro del celular? No se va a enviar a la planilla.')) return;
+      DB.borrarVarios([id]).then(function () {
+        if (estado.editandoId === id) {
+          salirDeEdicion();
+          limpiarFormulario();
+        }
+        return recargarPendientes();
+      });
+    }
+
+    /* ---------- Lista de registros en el celular ---------- */
+
+    function recargarPendientes() {
+      return DB.todos().then(function (todos) {
+        estado.pendientes = (todos || []).sort(function (a, b) { return a.creado - b.creado; });
+        renderLista();
+      });
+    }
+
+    function nombreMostrado(valor, libre, opcionNo) {
+      return valor === opcionNo ? 'No listado: ' + libre : valor;
+    }
+
+    function renderLista() {
+      var ul = el('lista');
+      while (ul.firstChild) ul.removeChild(ul.firstChild);
+      var n = estado.pendientes.length;
+      el('contador').textContent = n;
+      mostrar(el('listaVacia'), n === 0);
+      if (!estado.enviando) el('btnEnviar').textContent = n ? 'Enviar todo (' + n + ')' : 'Enviar todo';
+
+      estado.pendientes.forEach(function (p) {
+        var li = document.createElement('li');
+        li.className = 'bg-white rounded-lg shadow-sm p-3 flex items-center gap-3' +
+          (p.error ? ' border-2 border-red-400' : '') +
+          (estado.editandoId === p.id ? ' ring-2 ring-blue-400' : '');
+
+        var miniaturas = document.createElement('div');
+        miniaturas.className = 'flex gap-1 shrink-0';
+        [p.fotoEquipo, p.fotoHorometro].forEach(function (src) {
+          if (!src) return;
+          var img = document.createElement('img');
+          img.src = src;
+          img.alt = '';
+          img.className = 'h-12 w-12 object-cover rounded border border-slate-200';
+          miniaturas.appendChild(img);
+        });
+
+        var info = document.createElement('div');
+        info.className = 'flex-1 min-w-0';
+        var t1 = document.createElement('p');
+        t1.className = 'font-semibold truncate';
+        t1.textContent = nombreMostrado(p.equipo, p.equipoLibre, estado.opciones.noEquipo) + ' · ' +
+          nombreMostrado(p.tipo, p.tipoLibre, estado.opciones.noTipo);
+        var t2 = document.createElement('p');
+        t2.className = 'text-sm text-slate-600 truncate';
+        t2.textContent = p.horas + ' h · ' + p.usuario + ' · ' + formatoFecha(p.creado);
+        var t3 = document.createElement('p');
+        if (p.error) {
+          t3.className = 'text-xs text-red-700 font-semibold';
+          t3.textContent = 'Error: ' + p.error;
+        } else if (estado.editandoId === p.id) {
+          t3.className = 'text-xs text-blue-700 font-semibold';
+          t3.textContent = 'Editando...';
+        } else {
+          t3.className = 'text-xs ' + (p.enCola ? 'text-amber-700' : 'text-slate-500');
+          t3.textContent = p.enCola ? 'En cola: se envía solo cuando haya señal' : 'Sin enviar';
+        }
+        info.appendChild(t1);
+        info.appendChild(t2);
+        info.appendChild(t3);
+
+        var acciones = document.createElement('div');
+        acciones.className = 'flex flex-col shrink-0';
+        var btnEditar = document.createElement('button');
+        btnEditar.type = 'button';
+        btnEditar.className = 'tap min-w-[48px] px-2 rounded-lg text-blue-700 text-sm font-medium active:bg-blue-50';
+        btnEditar.textContent = 'Editar';
+        btnEditar.addEventListener('click', function () { editar(p.id); });
+        var btnQuitar = document.createElement('button');
+        btnQuitar.type = 'button';
+        btnQuitar.className = 'tap min-w-[48px] rounded-lg text-red-600 text-xl active:bg-red-50';
+        btnQuitar.setAttribute('aria-label', 'Borrar registro');
+        btnQuitar.textContent = '✕';
+        btnQuitar.addEventListener('click', function () { quitar(p.id); });
+        acciones.appendChild(btnEditar);
+        acciones.appendChild(btnQuitar);
+
+        li.appendChild(miniaturas);
+        li.appendChild(info);
+        li.appendChild(acciones);
+        ul.appendChild(li);
+      });
+    }
+
+    /* ---------- Envío ---------- */
+
+    function resultado(tipo, texto) {
+      var clases = {
+        ok: 'bg-green-600 text-white',
+        local: 'bg-green-50 border-2 border-green-500 text-green-800',
+        offline: 'bg-amber-50 border-2 border-amber-400 text-amber-800',
+        error: 'bg-red-50 border-2 border-red-400 text-red-700'
+      };
+      var nodo = el('resultado');
+      nodo.className = 'mt-3 rounded-xl p-4 font-semibold whitespace-pre-line ' + clases[tipo];
+      nodo.textContent = texto;
+    }
+
+    function paraEnvio(p) {
+      return {
+        id: p.id, creado: p.creado,
+        equipo: p.equipo, equipoLibre: p.equipoLibre, tipo: p.tipo, tipoLibre: p.tipoLibre,
+        horas: p.horas, usuario: p.usuario, telefono: p.telefono,
+        fotoEquipo: p.fotoEquipo, fotoHorometro: p.fotoHorometro
+      };
+    }
+
+    /** Botón Enviar todo: guarda lo que haya en el formulario, pone todo en cola y envía. */
+    function onEnviarTodo() {
+      if (estado.enviando) return;
+      mostrar(el('resultado'), false);
+      var paso = formTieneDatos() ? agregarDesdeFormulario() : Promise.resolve(true);
+      paso.then(function (ok) {
+        if (!ok) {
+          resultado('error', 'Hay datos en el formulario que no se pudieron agregar. Corregilos o borralos antes de enviar.');
+          return;
+        }
+        var listos = estado.pendientes.filter(function (p) { return !p.error && p.id !== estado.editandoId; });
+        if (!listos.length) {
+          resultado('error', estado.pendientes.length
+            ? 'Los registros tienen errores. Tocá Editar para corregirlos.'
+            : 'Agregá al menos un registro a la lista antes de enviar.');
+          return;
+        }
+        listos.forEach(function (p) { p.enCola = true; });
+        DB.guardarVarios(listos).then(function () { enviarCola(true); });
+      });
+    }
+
+    /** Envía en tandas los registros que están en cola. Se llama desde el botón y automáticamente. */
+    function enviarCola(manual) {
+      if (estado.enviando || !urlConfigurada()) return Promise.resolve();
+      var candidatos = estado.pendientes.filter(function (p) {
+        return p.enCola && !p.error && p.id !== estado.editandoId;
+      });
+      if (!candidatos.length) return Promise.resolve();
+
+      estado.enviando = true;
+      var boton = el('btnEnviar');
+      boton.disabled = true;
+      boton.textContent = 'Enviando ' + candidatos.length + ' registro(s)...';
+      var tamTanda = estado.opciones.maxFilas || 15;
+      var total = { enviados: 0, conError: 0 };
+
+      function tanda() {
+        if (!candidatos.length) return Promise.resolve();
+        var lote = candidatos.slice(0, tamTanda);
+        var cuerpo = JSON.stringify({ accion: 'guardar', filas: lote.map(paraEnvio) });
+        return pedirJson(APP.API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: cuerpo
+        }, APP.TIMEOUT_ENVIO_MS).then(function (r) {
+          marcarConexion(true);
+          if (r && r.ok) {
+            var ids = r.ids || [];
+            total.enviados += ids.length;
+            candidatos = candidatos.filter(function (p) { return ids.indexOf(p.id) === -1; });
+            return DB.borrarVarios(ids).then(tanda);
+          }
+          if (r && r.invalidos && r.invalidos.length) {
+            var marcados = [];
+            r.invalidos.forEach(function (inv) {
+              var p = buscarPendiente(inv.id);
+              if (p) {
+                p.error = inv.error;
+                p.enCola = false;
+                marcados.push(p);
+              }
+            });
+            if (!marcados.length) throw new Error((r && r.error) || 'Error al guardar.');
+            total.conError += marcados.length;
+            candidatos = candidatos.filter(function (p) { return !p.error; });
+            return DB.guardarVarios(marcados).then(tanda);
+          }
+          var err = new Error((r && r.error) || 'No se pudo guardar.');
+          err.servidor = true;
+          throw err;
+        });
+      }
+
+      return tanda()
+        .then(function () {
+          var texto = '';
+          if (total.enviados) texto = '✔ Carga aprobada: se enviaron ' + total.enviados + ' registro(s) a la planilla.';
+          if (total.conError) {
+            resultado('error', (texto ? texto + '\n' : '') + total.conError + ' registro(s) tienen errores y no se enviaron. Tocá Editar para corregirlos.');
+          } else if (texto) {
+            resultado('ok', texto);
+          }
+        })
+        .catch(function (e) {
+          var enviadosTxt = total.enviados ? '✔ Se enviaron ' + total.enviados + ' registro(s).\n' : '';
+          if (e.red) {
+            marcarConexion(false);
+            if (manual || total.enviados) {
+              resultado('offline', enviadosTxt + 'Sin señal: los registros que faltan quedan guardados en el celular y se envían solos cuando vuelva la conexión.');
+            }
+          } else {
+            resultado('error', enviadosTxt + 'No se pudo enviar: ' + mensaje(e) + '\nLos registros siguen guardados en el celular.');
+          }
+        })
+        .then(function () {
+          estado.enviando = false;
+          boton.disabled = false;
+          return recargarPendientes();
+        });
+    }
+
+    function hayCola() {
+      return estado.pendientes.some(function (p) { return p.enCola && !p.error; });
+    }
+
+    /* ---------- Usuario y teléfono recordados en este celular ---------- */
+
+    function recordarContacto() {
+      try {
+        localStorage.setItem('reg_usuario', el('usuario').value.trim());
+        localStorage.setItem('reg_telefono', el('telefono').value.trim());
+      } catch (e) {}
+    }
+
+    function restaurarContacto() {
+      try {
+        el('usuario').value = localStorage.getItem('reg_usuario') || '';
+        el('telefono').value = localStorage.getItem('reg_telefono') || '';
+      } catch (e) {}
+    }
+
+    function actualizarReloj() {
+      if (!estado.editandoId) el('fecha').textContent = formatoFecha(Date.now());
+    }
+
+    /* ---------- Inicio ---------- */
+
+    el('form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      mostrar(el('resultado'), false);
+      var eraEdicion = !!estado.editandoId;
+      agregarDesdeFormulario().then(function (ok) {
+        if (!ok) return;
+        resultado('local', eraEdicion
+          ? '✔ Cambios guardados en el celular. Tocá Enviar todo para mandarlo.'
+          : '✔ Registro guardado en el celular. Podés agregar otro o tocar Enviar todo.');
+        el('equipo').focus();
+      });
+    });
+    el('equipo').addEventListener('change', actualizarLibres);
+    el('tipo').addEventListener('change', actualizarLibres);
+    el('btnCancelarEdicion').addEventListener('click', function () {
+      salirDeEdicion();
+      limpiarFormulario();
+      renderLista();
+    });
+    el('btnSync').addEventListener('click', function () {
+      cargarListas(true).then(function () { return enviarCola(true); });
+    });
+    el('btnEnviar').addEventListener('click', onEnviarTodo);
+    filtrarDigitos(el('equipoLibre'), function () { return estado.opciones.soloNumEquipo; });
+    filtrarDigitos(el('tipoLibre'), function () { return estado.opciones.soloNumTipo; });
+    configurarFoto('equipo', 'Equipo');
+    configurarFoto('horometro', 'Horometro');
+
+    window.addEventListener('online', function () {
+      marcarConexion(true);
+      cargarListas(false).then(function () { return enviarCola(false); });
+    });
+    window.addEventListener('offline', function () { marcarConexion(false); });
+    setInterval(function () {
+      actualizarReloj();
+      if (hayCola() && !estado.enviando) enviarCola(false);
+    }, APP.REINTENTO_MS);
+
+    restaurarContacto();
+    actualizarReloj();
+    marcarConexion(navigator.onLine);
+    var listasGuardadas = leerListasGuardadas();
+    if (listasGuardadas) aplicarListas(listasGuardadas);
+    recargarPendientes()
+      .catch(function (e) { resultado('error', 'No se pudo abrir el almacenamiento del celular: ' + mensaje(e)); })
+      .then(function () { return cargarListas(false); })
+      .then(function () { return enviarCola(false); });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    }
+  </script>
+</body>
+</html>
