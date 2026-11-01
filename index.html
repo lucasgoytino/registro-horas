@@ -56,8 +56,17 @@
       </div>
 
       <div>
-        <label for="equipo" class="block text-sm font-semibold mb-1">Equipo</label>
-        <select id="equipo" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white">
+        <label for="equipoBuscar" class="block text-sm font-semibold mb-1">Equipo</label>
+        <div class="relative">
+          <input id="equipoBuscar" type="text" role="combobox" aria-autocomplete="list" aria-controls="equipoLista" aria-expanded="false"
+            autocomplete="off" placeholder="Cargando..."
+            class="tap w-full pl-3 pr-9 rounded-lg border border-slate-300 bg-white scroll-mt-24">
+          <span aria-hidden="true" class="absolute right-3 top-3 text-slate-500 pointer-events-none">&#x25BE;</span>
+          <ul id="equipoLista" role="listbox" aria-label="Equipos"
+            class="hidden absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border border-slate-300 bg-white shadow-lg"></ul>
+        </div>
+        <!-- El select queda oculto y guarda el valor elegido -->
+        <select id="equipo" class="hidden" aria-hidden="true" tabindex="-1">
           <option value="">Cargando...</option>
         </select>
         <div id="boxEquipoLibre" class="hidden mt-2">
@@ -68,8 +77,16 @@
       </div>
 
       <div>
-        <label for="tipo" class="block text-sm font-semibold mb-1">Tipo de Equipo</label>
-        <select id="tipo" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white">
+        <label for="tipoBuscar" class="block text-sm font-semibold mb-1">Tipo de Equipo</label>
+        <div class="relative">
+          <input id="tipoBuscar" type="text" role="combobox" aria-autocomplete="list" aria-controls="tipoLista" aria-expanded="false"
+            autocomplete="off" placeholder="Cargando..."
+            class="tap w-full pl-3 pr-9 rounded-lg border border-slate-300 bg-white scroll-mt-24">
+          <span aria-hidden="true" class="absolute right-3 top-3 text-slate-500 pointer-events-none">&#x25BE;</span>
+          <ul id="tipoLista" role="listbox" aria-label="Tipos de equipo"
+            class="hidden absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border border-slate-300 bg-white shadow-lg"></ul>
+        </div>
+        <select id="tipo" class="hidden" aria-hidden="true" tabindex="-1">
           <option value="">Cargando...</option>
         </select>
         <div id="boxTipoLibre" class="hidden mt-2">
@@ -330,8 +347,8 @@
 
     function aplicarListas(r) {
       estado.opciones = r.opciones;
-      llenarSelect(el('equipo'), r.equipos, 'Seleccioná un equipo', r.opciones.noEquipo);
-      llenarSelect(el('tipo'), r.tipos, 'Seleccioná un tipo de equipo', r.opciones.noTipo);
+      llenarSelect(el('equipo'), r.equipos, 'Escribí o elegí un equipo', r.opciones.noEquipo);
+      llenarSelect(el('tipo'), r.tipos, 'Escribí o elegí un tipo de equipo', r.opciones.noTipo);
       configurarLibre(el('equipoLibre'), el('lblEquipoLibre'), r.opciones.soloNumEquipo, 'Número del equipo', 'Descripción del equipo');
       configurarLibre(el('tipoLibre'), el('lblTipoLibre'), r.opciones.soloNumTipo, 'Número del tipo de equipo', 'Descripción del tipo de equipo');
       actualizarLibres();
@@ -358,19 +375,161 @@
     function llenarSelect(sel, items, placeholder, opcionNo) {
       var previo = sel.value;
       while (sel.firstChild) sel.removeChild(sel.firstChild);
-      // Texto guía: se ve cuando no hay nada elegido, pero no aparece como opción en la lista
-      var guia = crearOpcion('', placeholder);
-      guia.disabled = true;
-      guia.hidden = true;
-      sel.appendChild(guia);
+      // Opción vacía: significa "nada elegido" y nunca aparece en la lista del buscador
+      sel.appendChild(crearOpcion('', ''));
       items.forEach(function (t) { sel.appendChild(crearOpcion(t, t)); });
       sel.appendChild(crearOpcion(opcionNo, opcionNo));
+      el(sel.id + 'Buscar').placeholder = placeholder;
       elegir(sel, previo);
     }
 
     function elegir(sel, valor) {
       sel.value = valor;
       if (!valor || sel.value !== valor) sel.selectedIndex = 0;
+      pintarBuscador(sel);
+    }
+
+    /* ---------- Buscador de Equipo y Tipo de Equipo ---------- */
+
+    var buscadores = {};
+
+    // "eq 001", "EQ001" y "eq-001" encuentran lo mismo; también ignora mayúsculas y acentos
+    function normalizarBusqueda(t) {
+      return String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+    }
+
+    function valoresDe(sel) {
+      return Array.prototype.slice.call(sel.options)
+        .map(function (o) { return o.value; })
+        .filter(function (v) { return !!v; });
+    }
+
+    function pintarBuscador(sel) {
+      var b = buscadores[sel.id];
+      if (!b) return;
+      if (document.activeElement !== b.input) b.input.value = sel.value;
+      else if (!b.lista.classList.contains('hidden')) renderBuscador(b, b.texto);
+    }
+
+    function renderBuscador(b, texto) {
+      b.texto = texto;
+      var buscado = normalizarBusqueda(texto);
+      var valores = valoresDe(b.sel);
+      var noEncontre = valores.pop(); // la última opción siempre es "No encontré...", y siempre se muestra
+      var coincidencias = valores.filter(function (v) {
+        return normalizarBusqueda(v).indexOf(buscado) !== -1;
+      });
+      b.coincidencias = coincidencias.length;
+      b.visibles = noEncontre ? coincidencias.concat([noEncontre]) : coincidencias;
+      b.activo = -1;
+      b.input.removeAttribute('aria-activedescendant');
+
+      while (b.lista.firstChild) b.lista.removeChild(b.lista.firstChild);
+      if (!coincidencias.length) {
+        var vacio = document.createElement('li');
+        vacio.className = 'px-3 py-3 text-sm text-slate-500';
+        vacio.textContent = 'No hay coincidencias';
+        b.lista.appendChild(vacio);
+      }
+      b.visibles.forEach(function (v, i) {
+        var li = document.createElement('li');
+        var elegido = v === b.sel.value;
+        li.id = b.sel.id + 'Op' + i;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', elegido ? 'true' : 'false');
+        li.className = 'tap flex items-center px-3 cursor-pointer border-t border-slate-100 first:border-t-0 active:bg-slate-100' +
+          (elegido ? ' bg-green-50 font-semibold' : '') +
+          (v === noEncontre ? ' text-amber-800 font-medium' : '');
+        li.textContent = v;
+        li.addEventListener('click', function () { seleccionarDeLista(b, v); });
+        b.lista.appendChild(li);
+      });
+    }
+
+    function abrirBuscador(b, texto) {
+      renderBuscador(b, texto);
+      mostrar(b.lista, true);
+      b.lista.scrollTop = 0;
+      b.input.setAttribute('aria-expanded', 'true');
+    }
+
+    function cerrarBuscador(b) {
+      mostrar(b.lista, false);
+      b.input.setAttribute('aria-expanded', 'false');
+      b.input.removeAttribute('aria-activedescendant');
+    }
+
+    function fijarValor(b, valor) {
+      var antes = b.sel.value;
+      elegir(b.sel, valor);
+      b.input.value = b.sel.value;
+      if (b.sel.value !== antes) b.sel.dispatchEvent(new Event('change'));
+    }
+
+    function seleccionarDeLista(b, valor) {
+      cerrarBuscador(b);
+      fijarValor(b, valor);
+      b.input.blur();
+    }
+
+    // Al salir del campo: vacío borra la elección, un texto idéntico a una opción la elige
+    // y cualquier otro texto se descarta para volver a lo que estaba elegido.
+    function resolverTexto(b) {
+      var buscado = normalizarBusqueda(b.input.value);
+      if (!b.input.value.trim()) return fijarValor(b, '');
+      var exacta = valoresDe(b.sel).filter(function (v) { return normalizarBusqueda(v) === buscado; });
+      fijarValor(b, exacta.length === 1 ? exacta[0] : b.sel.value);
+    }
+
+    function marcarActivo(b, indice) {
+      var items = b.lista.querySelectorAll('[role="option"]');
+      if (!items.length) return;
+      if (b.activo >= 0) items[b.activo].classList.remove('bg-slate-200');
+      b.activo = (indice + items.length) % items.length;
+      items[b.activo].classList.add('bg-slate-200');
+      items[b.activo].scrollIntoView({ block: 'nearest' });
+      b.input.setAttribute('aria-activedescendant', items[b.activo].id);
+    }
+
+    function configurarBuscador(id) {
+      var b = { sel: el(id), input: el(id + 'Buscar'), lista: el(id + 'Lista'), visibles: [], coincidencias: 0, activo: -1, texto: '' };
+      buscadores[id] = b;
+
+      b.input.addEventListener('focus', function () {
+        abrirBuscador(b, '');
+        b.input.select();
+        // En el celular, sube el campo para que el teclado no tape la lista
+        if (navigator.maxTouchPoints > 0) {
+          setTimeout(function () {
+            if (document.activeElement === b.input) b.input.scrollIntoView({ block: 'start' });
+          }, 300);
+        }
+      });
+      b.input.addEventListener('click', function () {
+        if (b.lista.classList.contains('hidden')) abrirBuscador(b, '');
+      });
+      b.input.addEventListener('input', function () { abrirBuscador(b, b.input.value); });
+      b.input.addEventListener('blur', function () {
+        cerrarBuscador(b);
+        resolverTexto(b);
+      });
+      b.input.addEventListener('keydown', function (e) {
+        var abierta = !b.lista.classList.contains('hidden');
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (!abierta) abrirBuscador(b, '');
+          marcarActivo(b, e.key === 'ArrowDown' ? b.activo + 1 : (b.activo < 0 ? -1 : b.activo - 1));
+        } else if (e.key === 'Enter' && abierta) {
+          e.preventDefault();
+          var indice = b.activo >= 0 ? b.activo : (b.coincidencias > 0 && b.texto.trim() ? 0 : -1);
+          if (indice >= 0) seleccionarDeLista(b, b.visibles[indice]);
+          else cerrarBuscador(b);
+        } else if (e.key === 'Escape') {
+          cerrarBuscador(b);
+        }
+      });
+      // Tocar la lista no debe sacar el foco del campo antes de registrar el toque
+      b.lista.addEventListener('mousedown', function (e) { e.preventDefault(); });
     }
 
     function configurarLibre(input, label, soloNumeros, textoNum, textoLibre) {
@@ -847,9 +1006,11 @@
         resultado('local', eraEdicion
           ? '✔ Cambios guardados en el celular. Tocá Enviar todo para mandarlo.'
           : '✔ Registro guardado en el celular. Podés agregar otro o tocar Enviar todo.');
-        el('equipo').focus();
+        window.scrollTo(0, 0);
       });
     });
+    configurarBuscador('equipo');
+    configurarBuscador('tipo');
     el('equipo').addEventListener('change', actualizarLibres);
     el('tipo').addEventListener('change', actualizarLibres);
     el('btnCancelarEdicion').addEventListener('click', function () {
