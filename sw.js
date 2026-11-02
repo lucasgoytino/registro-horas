@@ -1,9 +1,9 @@
 /**
  * Service worker: guarda la app en el celular para que abra sin señal.
- * Cuando cambies index.html, subí también este archivo con VERSION aumentada (v2, v3...).
+ * Cuando cambies alguna página, subí también este archivo con VERSION aumentada (v2, v3...).
  */
-var VERSION = 'pecom-horas-v4';
-var ARCHIVOS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+var VERSION = 'pecom-horas-v5';
+var ARCHIVOS = ['./', './index.html', './horas.html', './parte.html', './config.js', './manifest.json', './icon-192.png', './icon-512.png'];
 var TAILWIND = 'https://cdn.tailwindcss.com';
 
 self.addEventListener('install', function (e) {

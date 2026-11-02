@@ -1,7 +1,7 @@
 {
-  "name": "PECOM Registro de Horas",
-  "short_name": "Horas PECOM",
-  "description": "Registro de horas de funcionamiento de equipos, con o sin señal.",
+  "name": "PECOM Equipos",
+  "short_name": "PECOM Equipos",
+  "description": "Registro de horas y parte diario de equipos.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

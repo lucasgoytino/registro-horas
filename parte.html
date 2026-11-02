@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#16a34a">
+  <title>Parte diario PECOM</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <script src="config.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tap { min-height: 48px; }
+    input, select, textarea { font-size: 16px; }
+    .hidden { display: none !important; }
+    .fija { position: sticky; left: 0; z-index: 1; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen">
+
+  <!-- Ingreso -->
+  <main id="vLogin" class="hidden max-w-md mx-auto px-4 py-8">
+    <a href="index.html" class="inline-flex items-center tap font-medium text-blue-700">&#x2190; Inicio</a>
+    <h1 class="text-2xl font-bold mt-2 mb-4">Parte diario de equipos</h1>
+    <form id="formLogin" class="bg-white rounded-xl shadow-sm p-4 space-y-4" novalidate>
+      <div>
+        <label for="loginUsuario" class="block text-sm font-semibold mb-1">Usuario</label>
+        <input id="loginUsuario" type="text" autocomplete="username" autocapitalize="characters"
+          class="tap w-full px-3 rounded-lg border border-slate-300">
+      </div>
+      <div>
+        <label for="loginClave" class="block text-sm font-semibold mb-1">Contraseña</label>
+        <input id="loginClave" type="password" autocomplete="current-password"
+          class="tap w-full px-3 rounded-lg border border-slate-300">
+      </div>
+      <button id="btnIngresar" type="submit"
+        class="tap w-full py-3 rounded-xl bg-green-600 text-white text-lg font-bold shadow-md active:bg-green-700 disabled:opacity-60">Ingresar</button>
+      <div id="errorLogin" role="alert" class="hidden rounded-lg bg-red-50 border border-red-300 text-red-700 p-3 text-sm whitespace-pre-line"></div>
+    </form>
+  </main>
+
+  <!-- Aplicación -->
+  <div id="vApp" class="hidden">
+    <header class="sticky top-0 z-30 bg-white border-b border-slate-200">
+      <div class="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <a href="index.html" class="text-xs font-medium text-blue-700">&#x2190; Inicio</a>
+          <h1 id="txtNombre" class="text-base font-bold leading-tight truncate"></h1>
+          <p class="text-xs text-slate-600 flex items-center gap-1">
+            <span id="puntoConexion" class="inline-block w-2 h-2 rounded-full bg-slate-400"></span>
+            <span id="txtConexion">Comprobando conexión...</span>
+          </p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btnSalir" type="button" class="tap px-3 rounded-lg text-sm font-medium text-slate-600 active:bg-slate-100">Salir</button>
+          <button id="btnSync" type="button" aria-label="Sincronizar listas y enviar pendientes"
+            class="tap min-w-[48px] px-3 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium flex items-center gap-2 active:bg-slate-100 disabled:opacity-60">
+            <span id="iconSync" aria-hidden="true" class="text-xl leading-none">&#x21bb;</span>
+            <span class="text-sm">Sincronizar</span>
+          </button>
+        </div>
+      </div>
+      <nav id="tabs" class="max-w-4xl mx-auto px-2 flex gap-1 overflow-x-auto"></nav>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-4 pb-12">
+      <div id="aviso" class="hidden mb-4 rounded-lg p-3 text-sm whitespace-pre-line"></div>
+
+      <!-- Carga -->
+      <section id="secCargar" class="hidden max-w-xl mx-auto">
+        <form id="form" class="bg-white rounded-xl shadow-sm p-4 space-y-4" novalidate autocomplete="off">
+          <div id="bannerEdicion" class="hidden rounded-lg bg-blue-50 border border-blue-300 text-blue-800 p-3 text-sm">
+            <div class="flex items-center justify-between gap-3">
+              <span class="font-semibold">Editando un registro pendiente</span>
+              <button id="btnCancelarEdicion" type="button" class="tap px-3 rounded-lg border border-blue-300 bg-white font-medium">Cancelar</button>
+            </div>
+          </div>
+
+          <div>
+            <span class="block text-sm font-semibold mb-1">Fecha</span>
+            <div id="fecha" class="tap flex items-center px-3 rounded-lg bg-slate-100 text-slate-600"></div>
+          </div>
+
+          <div id="boxTaller">
+            <label for="taller" class="block text-sm font-semibold mb-1">Taller</label>
+            <select id="taller" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white"></select>
+          </div>
+
+          <div>
+            <label for="equipoBuscar" class="block text-sm font-semibold mb-1">Equipo</label>
+            <div class="relative">
+              <input id="equipoBuscar" type="text" role="combobox" aria-autocomplete="list" aria-controls="equipoLista" aria-expanded="false"
+                autocomplete="off" placeholder="Escribí número o tipo de equipo"
+                class="tap w-full pl-3 pr-9 rounded-lg border border-slate-300 bg-white scroll-mt-32">
+              <span aria-hidden="true" class="absolute right-3 top-3 text-slate-500 pointer-events-none">&#x25BE;</span>
+              <ul id="equipoLista" role="listbox" aria-label="Equipos"
+                class="hidden absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border border-slate-300 bg-white shadow-lg"></ul>
+            </div>
+            <p id="txtActual" class="hidden text-xs font-medium text-amber-800 mt-1"></p>
+          </div>
+
+          <div>
+            <span class="block text-sm font-semibold mb-1">Tipo de Equipo</span>
+            <div id="tipo" class="tap flex items-center px-3 py-2 rounded-lg bg-slate-100 text-slate-600">Se completa al elegir el equipo</div>
+          </div>
+
+          <div>
+            <label for="estadoSel" class="block text-sm font-semibold mb-1">Estado</label>
+            <select id="estadoSel" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white"></select>
+          </div>
+
+          <div id="boxProveedor" class="hidden">
+            <label for="proveedor" class="block text-sm font-semibold mb-1">Proveedor</label>
+            <select id="proveedor" class="tap w-full px-3 rounded-lg border border-amber-400 bg-amber-50"></select>
+          </div>
+
+          <div>
+            <span class="block text-sm font-semibold mb-1">Usuario</span>
+            <div id="usuario" class="tap flex items-center px-3 rounded-lg bg-slate-100 text-slate-600"></div>
+          </div>
+
+          <div>
+            <span class="block text-sm font-semibold mb-1">Teléfono de contacto</span>
+            <div id="telefono" class="tap flex items-center px-3 rounded-lg bg-slate-100 text-slate-600"></div>
+          </div>
+
+          <div>
+            <label for="descripcion" id="lblDescripcion" class="block text-sm font-semibold mb-1">Descripción</label>
+            <textarea id="descripcion" rows="3" class="w-full px-3 py-2 rounded-lg border border-slate-300"></textarea>
+          </div>
+
+          <div id="errorForm" role="alert" class="hidden rounded-lg bg-red-50 border border-red-300 text-red-700 p-3 text-sm whitespace-pre-line"></div>
+
+          <button id="btnAgregar" type="submit"
+            class="tap w-full rounded-lg border-2 border-blue-600 text-blue-700 font-semibold active:bg-blue-50">+ Agregar a la lista</button>
+        </form>
+
+        <div class="mt-5">
+          <h2 class="text-sm font-semibold text-slate-600">Registros en este celular (<span id="contador">0</span>)</h2>
+          <p class="text-xs text-slate-500 mb-2">Quedan guardados aunque cierres la app o te quedes sin señal.</p>
+          <p id="listaVacia" class="text-sm text-slate-500">Todavía no agregaste registros.</p>
+          <ul id="lista" class="space-y-2"></ul>
+        </div>
+
+        <button id="btnEnviar" type="button"
+          class="tap w-full mt-5 py-4 rounded-xl bg-green-600 text-white text-lg font-bold shadow-md active:bg-green-700 disabled:opacity-60">Enviar todo</button>
+        <div id="resultado" role="status" aria-live="polite" class="hidden mt-3 rounded-xl p-4 font-semibold whitespace-pre-line"></div>
+      </section>
+
+      <!-- Tablero -->
+      <section id="secTablero" class="hidden">
+        <div class="bg-white rounded-xl shadow-sm p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
+          <div class="col-span-2 sm:col-span-1">
+            <label for="tabTaller" class="block text-sm font-semibold mb-1">Taller</label>
+            <select id="tabTaller" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white"></select>
+          </div>
+          <div>
+            <label for="tabMes" class="block text-sm font-semibold mb-1">Mes</label>
+            <select id="tabMes" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white"></select>
+          </div>
+          <div>
+            <label for="tabAnio" class="block text-sm font-semibold mb-1">Año</label>
+            <select id="tabAnio" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white"></select>
+          </div>
+          <button id="btnTabDescargar" type="button" disabled
+            class="tap col-span-2 sm:col-span-1 rounded-lg border-2 border-blue-600 text-blue-700 font-semibold active:bg-blue-50 disabled:opacity-50">Descargar Excel</button>
+        </div>
+        <div id="tabLeyenda" class="flex flex-wrap gap-2 mt-3 text-xs"></div>
+        <p id="tabMensaje" class="text-sm text-slate-600 mt-3"></p>
+        <div id="tabContenedor" class="mt-3 bg-white rounded-xl shadow-sm overflow-x-auto"></div>
+      </section>
+
+      <!-- Consulta -->
+      <section id="secConsulta" class="hidden">
+        <form id="formConsulta" class="bg-white rounded-xl shadow-sm p-4 grid grid-cols-2 sm:grid-cols-3 gap-3" novalidate>
+          <div id="boxConTaller">
+            <label for="conTaller" class="block text-sm font-semibold mb-1">Taller</label>
+            <select id="conTaller" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white"></select>
+          </div>
+          <div id="boxConEstado">
+            <label for="conEstado" class="block text-sm font-semibold mb-1">Estado</label>
+            <select id="conEstado" class="tap w-full px-3 rounded-lg border border-slate-300 bg-white"></select>
+          </div>
+          <div class="col-span-2 sm:col-span-1">
+            <label for="conEquipo" class="block text-sm font-semibold mb-1">Equipo</label>
+            <input id="conEquipo" type="text" inputmode="numeric" placeholder="Número de equipo" class="tap w-full px-3 rounded-lg border border-slate-300">
+          </div>
+          <div>
+            <label for="conDesde" class="block text-sm font-semibold mb-1">Desde</label>
+            <input id="conDesde" type="date" class="tap w-full px-2 rounded-lg border border-slate-300 bg-white">
+          </div>
+          <div>
+            <label for="conHasta" class="block text-sm font-semibold mb-1">Hasta</label>
+            <input id="conHasta" type="date" class="tap w-full px-2 rounded-lg border border-slate-300 bg-white">
+          </div>
+          <div class="col-span-2 sm:col-span-1 flex gap-2 items-end">
+            <button id="btnBuscar" type="submit" class="tap flex-1 rounded-lg bg-green-600 text-white font-bold active:bg-green-700 disabled:opacity-60">Buscar</button>
+            <button id="btnConDescargar" type="button" disabled
+              class="tap flex-1 rounded-lg border-2 border-blue-600 text-blue-700 text-sm font-semibold active:bg-blue-50 disabled:opacity-50">Excel</button>
+          </div>
+        </form>
+        <p id="conMensaje" role="status" class="text-sm text-slate-600 mt-3 whitespace-pre-line"></p>
+        <ul id="conLista" class="space-y-2 mt-3"></ul>
+      </section>
+
+      <!-- Alertas -->
+      <section id="secAlertas" class="hidden max-w-xl mx-auto">
+        <p id="aleMensaje" role="status" class="text-sm text-slate-600 mb-3 whitespace-pre-line"></p>
+        <ul id="aleLista" class="space-y-3"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var APP = {
+      API_URL: window.PECOM_API_URL,
+      TIMEOUT_MS: 30000,
+      TIMEOUT_ENVIO_MS: 120000,
+      REINTENTO_MS: 60000,
+      MAX_EN_BUSCADOR: 50,
+      MAX_EN_CONSULTA: 100,
+      XLSX_URL: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+      XLSX_SRI: 'sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw',
+      MESES: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+      COLORES: ['bg-amber-200 text-amber-900', 'bg-blue-200 text-blue-900', 'bg-red-200 text-red-900', 'bg-purple-200 text-purple-900', 'bg-teal-200 text-teal-900', 'bg-pink-200 text-pink-900', 'bg-slate-300 text-slate-900']
+    };
+
+    var estado = {
+      token: null,
+      datos: null,
+      pendientes: [],
+      equipo: null,
+      activoBuscador: -1,
+      visiblesBuscador: [],
+      editandoId: null,
+      editandoCreado: null,
+      enviando: false,
+      sincronizando: false,
+      tab: '',
+      tablero: null,
+      consulta: []
+    };
+
+    function el(id) { return document.getElementById(id); }
+    function mostrar(nodo, visible) { nodo.classList.toggle('hidden', !visible); }
+    function mensaje(e) { return (e && e.message) ? e.message : String(e); }
+    function dos(n) { return n < 10 ? '0' + n : String(n); }
+    function formatoFecha(ms) {
+      var d = new Date(ms);
+      return dos(d.getDate()) + '/' + dos(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + dos(d.getHours()) + ':' + dos(d.getMinutes());
+    }
+    function generarId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+    }
+    function normalizar(t) {
+      return String(t === undefined || t === null ? '' : t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    }
+    function iguales(a, b) { return normalizar(a) === normalizar(b); }
+    function crearOpcion(valor, texto) {
+      var o = document.createElement('option');
+      o.value = valor;
+      o.textContent = texto;
+      return o;
+    }
+    function llenarSelect(sel, items, primera) {
+      var previo = sel.value;
+      while (sel.firstChild) sel.removeChild(sel.firstChild);
+      if (primera !== null) {
+        var guia = crearOpcion('', primera);
+        sel.appendChild(guia);
+      }
+      items.forEach(function (t) { sel.appendChild(crearOpcion(t, t)); });
+      sel.value = previo;
+      if (sel.selectedIndex < 0) sel.selectedIndex = 0;
+    }
+    function crear(tag, clase, texto) {
+      var n = document.createElement(tag);
+      if (clase) n.className = clase;
+      if (texto !== undefined) n.textContent = texto;
+      return n;
+    }
+    function vaciar(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+
+    /* ---------- Base local: los registros sobreviven sin señal y al cerrar la app ---------- */
+
+    var DB = {
+      conexion: null,
+      abrir: function () {
+        if (DB.conexion) return Promise.resolve(DB.conexion);
+        return new Promise(function (resolver, rechazar) {
+          var pedido = indexedDB.open('pecom-parte', 1);
+          pedido.onupgradeneeded = function () { pedido.result.createObjectStore('pendientes', { keyPath: 'id' }); };
+          pedido.onsuccess = function () { DB.conexion = pedido.result; resolver(DB.conexion); };
+          pedido.onerror = function () { rechazar(pedido.error); };
+        });
+      },
+      operar: function (modo, accion) {
+        return DB.abrir().then(function (db) {
+          return new Promise(function (resolver, rechazar) {
+            var tx = db.transaction('pendientes', modo);
+            var pedido = accion(tx.objectStore('pendientes'));
+            tx.oncomplete = function () { resolver(pedido ? pedido.result : undefined); };
+            tx.onerror = function () { rechazar(tx.error); };
+            tx.onabort = function () { rechazar(tx.error || new Error('Operación cancelada')); };
+          });
+        });
+      },
+      todos: function () { return DB.operar('readonly', function (s) { return s.getAll(); }); },
+      guardarVarios: function (registros) {
+        return DB.operar('readwrite', function (s) { registros.forEach(function (r) { s.put(r); }); return null; });
+      },
+      borrarVarios: function (ids) {
+        return DB.operar('readwrite', function (s) { ids.forEach(function (id) { s.delete(id); }); return null; });
+      }
+    };
+
+    /* ---------- Conexión ---------- */
+
+    function llamar(accion, extra, ms) {
+      var cuerpo = extra || {};
+      cuerpo.accion = accion;
+      if (estado.token) cuerpo.token = estado.token;
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, ms || APP.TIMEOUT_MS);
+      return fetch(APP.API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(cuerpo),
+        signal: ctrl.signal
+      }).then(function (r) {
+        clearTimeout(timer);
+        return r.text().then(function (texto) {
+          var datos;
+          try {
+            datos = JSON.parse(texto);
+          } catch (e) {
+            throw new Error('El servidor respondió algo inesperado. Revisá que la implementación de Apps Script esté actualizada y con acceso "Cualquier persona".');
+          }
+          marcarConexion(true);
+          if (datos && datos.sesion) {
+            sesionVencida(datos.error);
+            var err = new Error(datos.error);
+            err.sesion = true;
+            throw err;
+          }
+          return datos;
+        });
+      }, function () {
+        clearTimeout(timer);
+        marcarConexion(false);
+        var err = new Error('Sin conexión. Intentá de nuevo cuando tengas señal.');
+        err.red = true;
+        throw err;
+      });
+    }
+
+    function marcarConexion(enLinea) {
+      el('puntoConexion').className = 'inline-block w-2 h-2 rounded-full ' + (enLinea ? 'bg-green-500' : 'bg-amber-500');
+      el('txtConexion').textContent = enLinea ? 'Con conexión' : 'Sin conexión: se guarda en el celular';
+    }
+
+    function aviso(tipo, texto) {
+      var clases = {
+        error: 'bg-red-50 border border-red-300 text-red-700',
+        warn: 'bg-amber-50 border border-amber-300 text-amber-800',
+        ok: 'bg-green-50 border border-green-300 text-green-800'
+      };
+      var nodo = el('aviso');
+      nodo.className = 'mb-4 rounded-lg p-3 text-sm whitespace-pre-line ' + clases[tipo];
+      nodo.textContent = texto;
+    }
+
+    /* ---------- Sesión ---------- */
+
+    function guardarSesion() {
+      try {
+        localStorage.setItem('pd_sesion', JSON.stringify({ token: estado.token, datos: estado.datos }));
+        localStorage.setItem('pd_usuario', estado.datos.perfil.usuario);
+      } catch (e) {}
+    }
+
+    function leerSesion() {
+      try { return JSON.parse(localStorage.getItem('pd_sesion') || 'null'); } catch (e) { return null; }
+    }
+
+    function borrarSesion() {
+      estado.token = null;
+      estado.datos = null;
+      estado.pendientes = [];
+      try { localStorage.removeItem('pd_sesion'); } catch (e) {}
+    }
+
+    function verLogin(texto) {
+      mostrar(el('vApp'), false);
+      mostrar(el('vLogin'), true);
+      el('loginClave').value = '';
+      try { el('loginUsuario').value = localStorage.getItem('pd_usuario') || ''; } catch (e) {}
+      el('errorLogin').textContent = texto || '';
+      mostrar(el('errorLogin'), !!texto);
+    }
+
+    function sesionVencida(texto) {
+      borrarSesion();
+      verLogin(texto);
+    }
+
+    function ingresar(e) {
+      e.preventDefault();
+      var boton = el('btnIngresar');
+      var usuario = el('loginUsuario').value.trim();
+      var clave = el('loginClave').value;
+      mostrar(el('errorLogin'), false);
+      if (!usuario || !clave) {
+        el('errorLogin').textContent = 'Completá usuario y contraseña.';
+        mostrar(el('errorLogin'), true);
+        return;
+      }
+      boton.disabled = true;
+      boton.textContent = 'Ingresando...';
+      llamar('pd_login', { usuario: usuario, contrasena: clave })
+        .then(function (r) {
+          if (!r || !r.ok) throw new Error((r && r.error) || 'No se pudo ingresar.');
+          estado.token = r.token;
+          delete r.token;
+          estado.datos = r;
+          guardarSesion();
+          return iniciarApp().then(function () { return enviarCola(false); });
+        })
+        .catch(function (err) {
+          el('errorLogin').textContent = err.red ? 'Para ingresar necesitás señal. Intentá de nuevo cuando tengas conexión.' : mensaje(err);
+          mostrar(el('errorLogin'), true);
+        })
+        .then(function () {
+          el('loginClave').value = '';
+          boton.disabled = false;
+          boton.textContent = 'Ingresar';
+        });
+    }
+
+    function salir() {
+      var enCelular = estado.pendientes.length;
+      if (enCelular && !confirm('Tenés ' + enCelular + ' registro(s) sin enviar. Quedan guardados en este celular y se envían cuando vuelvas a ingresar. ¿Salir igual?')) return;
+      if (estado.token) llamar('pd_logout', {}).catch(function () {});
+      borrarSesion();
+      verLogin('');
+    }
+
+    /* ---------- Armado de la pantalla según el usuario ---------- */
+
+    function perfil() { return estado.datos.perfil; }
+    function talleresModificables() {
+      return perfil().talleres.filter(function (t) { return t.modificar; }).map(function (t) { return t.taller; });
+    }
+    function esJefe() { return perfil().talleres.some(function (t) { return t.jefe; }); }
+    function puedeCargar() { return perfil().esProveedor ? true : talleresModificables().length > 0; }
+
+    function iniciarApp() {
+      mostrar(el('vLogin'), false);
+      mostrar(el('vApp'), true);
+      var p = perfil();
+      el('txtNombre').textContent = p.esProveedor ? p.nombre + ' · ' + p.proveedor : p.nombre;
+      el('usuario').textContent = p.usuario;
+      el('telefono').textContent = p.telefono || '-';
+      mostrar(el('boxTaller'), !p.esProveedor);
+      mostrar(el('boxConTaller'), !p.esProveedor);
+      mostrar(el('boxConEstado'), !p.esProveedor);
+      el('btnAgregar').textContent = '+ Agregar a la lista';
+      aplicarDatos();
+      var tabs = tabsDisponibles();
+      irATab(tabs.some(function (t) { return t.id === estado.tab; }) ? estado.tab : tabs[0].id);
+      return recargarPendientes().catch(function (e) { aviso('error', 'No se pudo abrir el almacenamiento del celular: ' + mensaje(e)); });
+    }
+
+    function aplicarDatos() {
+      var d = estado.datos;
+      var p = d.perfil;
+      llenarSelect(el('estadoSel'), d.estados, 'Elegí un estado');
+      if (!p.esProveedor) {
+        var modificables = talleresModificables();
+        llenarSelect(el('taller'), modificables, modificables.length === 1 ? null : 'Elegí un taller');
+        llenarSelect(el('proveedor'), d.proveedores, 'Elegí un proveedor');
+        var todos = p.talleres.map(function (t) { return t.taller; });
+        llenarSelect(el('tabTaller'), todos, null);
+        llenarSelect(el('conTaller'), todos, 'Todos');
+        llenarSelect(el('conEstado'), d.estados, 'Todos');
+      }
+      if (estado.equipo && !buscarEquipo(estado.equipo.e)) elegirEquipo(null);
+      actualizarCampos();
+      renderTabs();
+      renderAlertas();
+    }
+
+    function tabsDisponibles() {
+      var p = perfil();
+      var lista = [];
+      if (puedeCargar()) lista.push({ id: 'Cargar', texto: p.esProveedor ? 'Informar' : 'Cargar' });
+      if (!p.esProveedor) lista.push({ id: 'Tablero', texto: 'Tablero' });
+      lista.push({ id: 'Consulta', texto: 'Consultar' });
+      if (!p.esProveedor && esJefe()) lista.push({ id: 'Alertas', texto: 'Avisos' });
+      return lista;
+    }
+
+    function renderTabs() {
+      var nav = el('tabs');
+      vaciar(nav);
+      tabsDisponibles().forEach(function (t) {
+        var activo = estado.tab === t.id;
+        var b = crear('button', 'tap px-4 text-sm font-semibold whitespace-nowrap border-b-2 ' +
+          (activo ? 'border-green-600 text-green-700' : 'border-transparent text-slate-600'), t.texto);
+        b.type = 'button';
+        if (activo) b.setAttribute('aria-current', 'page');
+        if (t.id === 'Alertas' && estado.datos.alertas && estado.datos.alertas.length) {
+          b.appendChild(crear('span', 'ml-2 inline-block px-2 rounded-full bg-red-600 text-white text-xs', String(estado.datos.alertas.length)));
+        }
+        b.addEventListener('click', function () { irATab(t.id); });
+        nav.appendChild(b);
+      });
+    }
+
+    function irATab(id) {
+      estado.tab = id;
+      ['Cargar', 'Tablero', 'Consulta', 'Alertas'].forEach(function (s) { mostrar(el('sec' + s), s === id); });
+      renderTabs();
+      if (id === 'Tablero') cargarTablero();
+    }
+
+    function refrescarDatos() {
+      return llamar('pd_datos', {}).then(function (r) {
+        if (!r || !r.ok) {
+          aviso('error', (r && r.error) || 'No se pudieron actualizar los datos.');
+          return false;
+        }
+        estado.datos = r;
+        guardarSesion();
+        aplicarDatos();
+        mostrar(el('aviso'), false);
+        return true;
+      });
+    }
+
+    function sincronizar() {
+      if (estado.sincronizando) return;
+      estado.sincronizando = true;
+      el('btnSync').disabled = true;
+      el('iconSync').classList.add('animate-spin');
+      refrescarDatos()
+        .then(function (ok) {
+          if (ok) aviso('ok', 'Datos actualizados.');
+          return enviarCola(true);
+        })
+        .then(function () { if (estado.tab === 'Tablero') cargarTablero(); })
+        .catch(function (e) { if (!e.sesion) aviso(e.red ? 'warn' : 'error', e.red ? 'Sin conexión: seguís usando los últimos datos descargados.' : mensaje(e)); })
+        .then(function () {
+          estado.sincronizando = false;
+          el('btnSync').disabled = false;
+          el('iconSync').classList.remove('animate-spin');
+        });
+    }
+
+    /* ---------- Buscador de equipo ---------- */
+
+    function buscarEquipo(numero) {
+      var lista = estado.datos.equipos;
+      for (var i = 0; i < lista.length; i++) {
+        if (lista[i].e === numero) return lista[i];
+      }
+      return null;
+    }
+
+    function renderBuscador(texto) {
+      var ul = el('equipoLista');
+      var buscado = normalizar(texto);
+      var todos = estado.datos.equipos.filter(function (q) {
+        return !buscado || q.e.indexOf(buscado) !== -1 || normalizar(q.t).indexOf(buscado) !== -1;
+      });
+      estado.visiblesBuscador = todos.slice(0, APP.MAX_EN_BUSCADOR);
+      estado.activoBuscador = -1;
+      el('equipoBuscar').removeAttribute('aria-activedescendant');
+      vaciar(ul);
+      if (!todos.length) {
+        ul.appendChild(crear('li', 'px-3 py-3 text-sm text-slate-500', perfil().esProveedor ? 'No tenés equipos asignados con ese dato.' : 'No hay coincidencias'));
+      }
+      estado.visiblesBuscador.forEach(function (q, i) {
+        var li = crear('li', 'tap flex flex-col justify-center px-3 py-1 cursor-pointer border-t border-slate-100 first:border-t-0 active:bg-slate-100');
+        li.id = 'equipoOp' + i;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', estado.equipo && estado.equipo.e === q.e ? 'true' : 'false');
+        li.appendChild(crear('span', 'font-semibold', q.e));
+        li.appendChild(crear('span', 'text-xs text-slate-600', q.t + (q.taller ? ' · ' + q.taller : '')));
+        li.addEventListener('click', function () {
+          elegirEquipo(q);
+          cerrarBuscador();
+          el('equipoBuscar').blur();
+        });
+        ul.appendChild(li);
+      });
+      if (todos.length > APP.MAX_EN_BUSCADOR) {
+        ul.appendChild(crear('li', 'px-3 py-2 text-xs text-slate-500', 'Se muestran ' + APP.MAX_EN_BUSCADOR + ' de ' + todos.length + '. Seguí escribiendo para acotar.'));
+      }
+    }
+
+    function abrirBuscador(texto) {
+      renderBuscador(texto);
+      mostrar(el('equipoLista'), true);
+      el('equipoLista').scrollTop = 0;
+      el('equipoBuscar').setAttribute('aria-expanded', 'true');
+    }
+
+    function cerrarBuscador() {
+      mostrar(el('equipoLista'), false);
+      el('equipoBuscar').setAttribute('aria-expanded', 'false');
+      el('equipoBuscar').removeAttribute('aria-activedescendant');
+    }
+
+    function elegirEquipo(q) {
+      estado.equipo = q;
+      el('equipoBuscar').value = q ? q.e : '';
+      el('tipo').textContent = q ? q.t : 'Se completa al elegir el equipo';
+      actualizarCampos();
+    }
+
+    // Al salir del campo: vacío borra, un número idéntico lo elige, otro texto vuelve a lo elegido
+    function resolverBuscador() {
+      var texto = el('equipoBuscar').value.trim();
+      if (!texto) return elegirEquipo(null);
+      elegirEquipo(buscarEquipo(texto) || estado.equipo);
+    }
+
+    function marcarActivo(indice) {
+      var items = el('equipoLista').querySelectorAll('[role="option"]');
+      if (!items.length) return;
+      if (estado.activoBuscador >= 0) items[estado.activoBuscador].classList.remove('bg-slate-200');
+      estado.activoBuscador = (indice + items.length) % items.length;
+      items[estado.activoBuscador].classList.add('bg-slate-200');
+      items[estado.activoBuscador].scrollIntoView({ block: 'nearest' });
+      el('equipoBuscar').setAttribute('aria-activedescendant', items[estado.activoBuscador].id);
+    }
+
+    function configurarBuscador() {
+      var input = el('equipoBuscar');
+      input.addEventListener('focus', function () {
+        abrirBuscador('');
+        input.select();
+        if (navigator.maxTouchPoints > 0) {
+          setTimeout(function () {
+            if (document.activeElement === input) input.scrollIntoView({ block: 'start' });
+          }, 300);
+        }
+      });
+      input.addEventListener('click', function () {
+        if (el('equipoLista').classList.contains('hidden')) abrirBuscador('');
+      });
+      input.addEventListener('input', function () { abrirBuscador(input.value); });
+      input.addEventListener('blur', function () {
+        cerrarBuscador();
+        resolverBuscador();
+      });
+      input.addEventListener('keydown', function (e) {
+        var abierta = !el('equipoLista').classList.contains('hidden');
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (!abierta) abrirBuscador('');
+          marcarActivo(e.key === 'ArrowDown' ? estado.activoBuscador + 1 : (estado.activoBuscador < 0 ? -1 : estado.activoBuscador - 1));
+        } else if (e.key === 'Enter' && abierta) {
+          e.preventDefault();
+          var i = estado.activoBuscador >= 0 ? estado.activoBuscador : (input.value.trim() && estado.visiblesBuscador.length ? 0 : -1);
+          if (i >= 0) elegirEquipo(estado.visiblesBuscador[i]);
+          cerrarBuscador();
+          input.blur();
+        } else if (e.key === 'Escape') {
+          cerrarBuscador();
+        }
+      });
+      // Tocar la lista no debe sacar el foco del campo antes de registrar el toque
+      el('equipoLista').addEventListener('mousedown', function (e) { e.preventDefault(); });
+    }
+
+    /* ---------- Formulario ---------- */
+
+    /** Estado del equipo según lo descargado más lo que ya está en la lista de este celular. */
+    function estadoEfectivo(numero) {
+      var actual = null;
+      (estado.datos.activos || []).forEach(function (a) { if (a.e === numero) actual = { estado: a.estado, taller: a.taller }; });
+      estado.pendientes.forEach(function (p) {
+        if (p.equipo === numero && p.id !== estado.editandoId && !p.error) actual = { estado: p.estado, taller: p.taller };
+      });
+      return actual;
+    }
+
+    function esDisponible(e) { return iguales(e, estado.datos.disponible); }
+    function esEnProveedor(e) { return iguales(e, estado.datos.enProveedor); }
+
+    function actualizarCampos() {
+      var p = perfil();
+      var elegido = el('estadoSel').value;
+      mostrar(el('boxProveedor'), !p.esProveedor && esEnProveedor(elegido));
+      el('lblDescripcion').textContent = esDisponible(elegido) ? 'Descripción (opcional)' : 'Descripción';
+
+      var txt = '';
+      if (estado.equipo) {
+        if (p.esProveedor) txt = 'Taller: ' + estado.equipo.taller;
+        else {
+          var actual = estadoEfectivo(estado.equipo.e);
+          if (actual && !esDisponible(actual.estado)) txt = 'Hoy: ' + actual.estado + ' en ' + actual.taller;
+        }
+      }
+      el('txtActual').textContent = txt;
+      mostrar(el('txtActual'), !!txt);
+    }
+
+    function leerFormulario() {
+      var p = perfil();
+      var f = {
+        equipo: estado.equipo ? estado.equipo.e : '',
+        tipo: estado.equipo ? estado.equipo.t : '',
+        taller: p.esProveedor ? (estado.equipo ? estado.equipo.taller : '') : el('taller').value,
+        estado: el('estadoSel').value,
+        proveedor: '',
+        descripcion: el('descripcion').value.trim()
+      };
+      var err = [];
+      if (!p.esProveedor && !f.taller) err.push('Elegí un taller.');
+      if (!f.equipo) err.push('Elegí un equipo de la lista.');
+      if (!f.estado) err.push('Elegí un estado.');
+      if (!p.esProveedor && esEnProveedor(f.estado)) {
+        f.proveedor = el('proveedor').value;
+        if (!f.proveedor) err.push('Indicá en qué proveedor está.');
+      }
+      if (f.estado && !esDisponible(f.estado) && !f.descripcion) err.push('Escribí la descripción.');
+      if (f.descripcion.length > estado.datos.maxDescripcion) err.push('La descripción es demasiado larga.');
+
+      if (!p.esProveedor && f.equipo && f.taller && f.estado) {
+        var actual = estadoEfectivo(f.equipo);
+        var activo = actual && !esDisponible(actual.estado);
+        if (activo && !iguales(actual.taller, f.taller)) {
+          err.push('El equipo está en ' + actual.taller + ' con estado "' + actual.estado + '". Ese taller debe pasarlo a ' + estado.datos.disponible + '.');
+        } else if (!activo && esDisponible(f.estado)) {
+          err.push('El equipo no está en este taller: se carga recién cuando entra, con un estado distinto a ' + estado.datos.disponible + '.');
+        }
+      }
+      return { fila: f, errores: err };
+    }
+
+    function formTieneDatos() {
+      return !!(estado.equipo || el('estadoSel').value || el('descripcion').value.trim());
+    }
+
+    function limpiarFormulario() {
+      elegirEquipo(null);
+      el('estadoSel').selectedIndex = 0;
+      el('proveedor').selectedIndex = 0;
+      el('descripcion').value = '';
+      mostrar(el('errorForm'), false);
+      actualizarCampos();
+    }
+
+    function agregarDesdeFormulario() {
+      var r = leerFormulario();
+      if (r.errores.length) {
+        el('errorForm').textContent = r.errores.join('\n');
+        mostrar(el('errorForm'), true);
+        return Promise.resolve(false);
+      }
+      mostrar(el('errorForm'), false);
+      var registro = r.fila;
+      registro.id = estado.editandoId || generarId();
+      registro.creado = estado.editandoId ? estado.editandoCreado : Date.now();
+      registro.usuario = perfil().usuario;
+      registro.enCola = false;
+      registro.error = '';
+      return DB.guardarVarios([registro])
+        .then(function () {
+          try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+          salirDeEdicion();
+          return recargarPendientes();
+        })
+        .then(function () {
+          limpiarFormulario();
+          return true;
+        })
+        .catch(function (e) {
+          el('errorForm').textContent = 'No se pudo guardar en el celular: ' + mensaje(e);
+          mostrar(el('errorForm'), true);
+          return false;
+        });
+    }
+
+    function editar(id) {
+      var p = buscarPendiente(id);
+      if (!p) return;
+      estado.editandoId = p.id;
+      estado.editandoCreado = p.creado;
+      elegirEquipo(buscarEquipo(p.equipo));
+      if (!perfil().esProveedor) el('taller').value = p.taller;
+      el('estadoSel').value = p.estado;
+      el('proveedor').value = p.proveedor || '';
+      el('descripcion').value = p.descripcion;
+      el('fecha').textContent = formatoFecha(p.creado);
+      el('btnAgregar').textContent = 'Guardar cambios';
+      mostrar(el('bannerEdicion'), true);
+      actualizarCampos();
+      if (p.error) {
+        el('errorForm').textContent = 'Corregí: ' + p.error;
+        mostrar(el('errorForm'), true);
+      }
+      renderLista();
+      window.scrollTo(0, 0);
+    }
+
+    function salirDeEdicion() {
+      estado.editandoId = null;
+      estado.editandoCreado = null;
+      el('btnAgregar').textContent = '+ Agregar a la lista';
+      mostrar(el('bannerEdicion'), false);
+      actualizarReloj();
+    }
+
+    function buscarPendiente(id) {
+      for (var i = 0; i < estado.pendientes.length; i++) {
+        if (estado.pendientes[i].id === id) return estado.pendientes[i];
+      }
+      return null;
+    }
+
+    function quitar(id) {
+      if (!confirm('¿Borrar este registro del celular? No se va a enviar.')) return;
+      DB.borrarVarios([id]).then(function () {
+        if (estado.editandoId === id) {
+          salirDeEdicion();
+          limpiarFormulario();
+        }
+        return recargarPendientes();
+      });
+    }
+
+    /* ---------- Lista del celular ---------- */
+
+    function recargarPendientes() {
+      var usuario = perfil().usuario;
+      return DB.todos().then(function (todos) {
+        estado.pendientes = (todos || [])
+          .filter(function (p) { return p.usuario === usuario; })
+          .sort(function (a, b) { return a.creado - b.creado; });
+        renderLista();
+        actualizarCampos();
+      });
+    }
+
+    function renderLista() {
+      var ul = el('lista');
+      vaciar(ul);
+      var n = estado.pendientes.length;
+      el('contador').textContent = n;
+      mostrar(el('listaVacia'), n === 0);
+      if (!estado.enviando) el('btnEnviar').textContent = n ? 'Enviar todo (' + n + ')' : 'Enviar todo';
+
+      estado.pendientes.forEach(function (p) {
+        var editando = estado.editandoId === p.id;
+        var li = crear('li', 'bg-white rounded-lg shadow-sm p-3 flex items-center gap-3' +
+          (p.error ? ' border-2 border-red-400' : '') + (editando ? ' ring-2 ring-blue-400' : ''));
+        var info = crear('div', 'flex-1 min-w-0');
+        info.appendChild(crear('p', 'font-semibold truncate', p.equipo + ' · ' + p.estado));
+        info.appendChild(crear('p', 'text-sm text-slate-600 truncate', (p.taller ? p.taller + ' · ' : '') + formatoFecha(p.creado)));
+        if (p.proveedor) info.appendChild(crear('p', 'text-sm text-slate-600 truncate', p.proveedor));
+        if (p.error) info.appendChild(crear('p', 'text-xs text-red-700 font-semibold', 'Error: ' + p.error));
+        else if (editando) info.appendChild(crear('p', 'text-xs text-blue-700 font-semibold', 'Editando...'));
+        else info.appendChild(crear('p', 'text-xs ' + (p.enCola ? 'text-amber-700' : 'text-slate-500'),
+          p.enCola ? 'En cola: se envía solo cuando haya señal' : 'Sin enviar'));
+
+        var acciones = crear('div', 'flex flex-col shrink-0');
+        var bEditar = crear('button', 'tap min-w-[48px] px-2 rounded-lg text-blue-700 text-sm font-medium active:bg-blue-50', 'Editar');
+        bEditar.type = 'button';
+        bEditar.addEventListener('click', function () { editar(p.id); });
+        var bQuitar = crear('button', 'tap min-w-[48px] rounded-lg text-red-600 text-xl active:bg-red-50', '✕');
+        bQuitar.type = 'button';
+        bQuitar.setAttribute('aria-label', 'Borrar registro');
+        bQuitar.addEventListener('click', function () { quitar(p.id); });
+        acciones.appendChild(bEditar);
+        acciones.appendChild(bQuitar);
+
+        li.appendChild(info);
+        li.appendChild(acciones);
+        ul.appendChild(li);
+      });
+    }
+
+    /* ---------- Envío ---------- */
+
+    function resultado(tipo, texto) {
+      var clases = {
+        ok: 'bg-green-600 text-white',
+        local: 'bg-green-50 border-2 border-green-500 text-green-800',
+        offline: 'bg-amber-50 border-2 border-amber-400 text-amber-800',
+        error: 'bg-red-50 border-2 border-red-400 text-red-700'
+      };
+      var nodo = el('resultado');
+      nodo.className = 'mt-3 rounded-xl p-4 font-semibold whitespace-pre-line ' + clases[tipo];
+      nodo.textContent = texto;
+    }
+
+    function paraEnvio(p) {
+      return { id: p.id, creado: p.creado, taller: p.taller, equipo: p.equipo, estado: p.estado, proveedor: p.proveedor, descripcion: p.descripcion };
+    }
+
+    function onEnviarTodo() {
+      if (estado.enviando) return;
+      mostrar(el('resultado'), false);
+      var paso = formTieneDatos() ? agregarDesdeFormulario() : Promise.resolve(true);
+      paso.then(function (ok) {
+        if (!ok) {
+          resultado('error', 'Hay datos en el formulario que no se pudieron agregar. Corregilos o borralos antes de enviar.');
+          return;
+        }
+        var listos = estado.pendientes.filter(function (p) { return !p.error && p.id !== estado.editandoId; });
+        if (!listos.length) {
+          resultado('error', estado.pendientes.length
+            ? 'Los registros tienen errores. Tocá Editar para corregirlos.'
+            : 'Agregá al menos un registro a la lista antes de enviar.');
+          return;
+        }
+        listos.forEach(function (p) { p.enCola = true; });
+        DB.guardarVarios(listos).then(function () { return enviarCola(true); });
+      });
+    }
+
+    /** Envía en tandas lo que está en cola. Se llama desde el botón y automáticamente. */
+    function enviarCola(manual) {
+      if (estado.enviando || !estado.token) return Promise.resolve();
+      var candidatos = estado.pendientes.filter(function (p) { return p.enCola && !p.error && p.id !== estado.editandoId; });
+      if (!candidatos.length) return Promise.resolve();
+
+      estado.enviando = true;
+      var boton = el('btnEnviar');
+      boton.disabled = true;
+      boton.textContent = 'Enviando ' + candidatos.length + ' registro(s)...';
+      var total = { enviados: 0, conError: 0 };
+
+      function tanda() {
+        if (!candidatos.length) return Promise.resolve();
+        var lote = candidatos.slice(0, estado.datos.maxFilas);
+        return llamar('pd_guardar', { filas: lote.map(paraEnvio) }, APP.TIMEOUT_ENVIO_MS).then(function (r) {
+          if (r && r.ok) {
+            var ids = r.ids || [];
+            total.enviados += ids.length;
+            candidatos = candidatos.filter(function (p) { return ids.indexOf(p.id) === -1; });
+            return DB.borrarVarios(ids).then(tanda);
+          }
+          if (r && r.invalidos && r.invalidos.length) {
+            var marcados = [];
+            r.invalidos.forEach(function (inv) {
+              var p = buscarPendiente(inv.id);
+              if (p) {
+                p.error = inv.error;
+                p.enCola = false;
+                marcados.push(p);
+              }
+            });
+            if (!marcados.length) throw new Error(r.error || 'Error al guardar.');
+            total.conError += marcados.length;
+            candidatos = candidatos.filter(function (p) { return !p.error; });
+            return DB.guardarVarios(marcados).then(tanda);
+          }
+          throw new Error((r && r.error) || 'No se pudo guardar.');
+        });
+      }
+
+      var esProveedor = perfil().esProveedor;
+      return tanda()
+        .then(function () {
+          var texto = '';
+          if (total.enviados) {
+            texto = '✔ Carga aprobada: ' + total.enviados + ' registro(s) ' +
+              (esProveedor ? 'avisados al jefe de taller.' : 'enviados a la planilla.');
+          }
+          if (total.conError) resultado('error', (texto ? texto + '\n' : '') + total.conError + ' registro(s) tienen errores y no se enviaron. Tocá Editar para corregirlos.');
+          else if (texto) resultado('ok', texto);
+        })
+        .catch(function (e) {
+          if (e.sesion) return;
+          var previo = total.enviados ? '✔ Se enviaron ' + total.enviados + ' registro(s).\n' : '';
+          if (e.red) {
+            if (manual || total.enviados) resultado('offline', previo + 'Sin señal: los registros que faltan quedan guardados en el celular y se envían solos cuando vuelva la conexión.');
+          } else {
+            resultado('error', previo + 'No se pudo enviar: ' + mensaje(e) + '\nLos registros siguen guardados en el celular.');
+          }
+        })
+        .then(function () {
+          estado.enviando = false;
+          boton.disabled = false;
+          if (!estado.token) return null;
+          return recargarPendientes().then(function () {
+            return total.enviados ? refrescarDatos().catch(function () {}) : null;
+          });
+        });
+    }
+
+    /* ---------- Tablero ---------- */
+
+    function configurarSelectoresTablero() {
+      var hoy = new Date();
+      var meses = el('tabMes');
+      APP.MESES.forEach(function (m, i) { meses.appendChild(crearOpcion(String(i + 1), m)); });
+      meses.value = String(hoy.getMonth() + 1);
+      var anios = el('tabAnio');
+      for (var a = hoy.getFullYear(); a >= hoy.getFullYear() - 4; a--) anios.appendChild(crearOpcion(String(a), String(a)));
+    }
+
+    function abreviar(texto) {
+      var cortas = { en: 1, de: 1, del: 1, la: 1, el: 1, y: 1, a: 1, para: 1 };
+      var letras = normalizar(texto).split(/\s+/).filter(function (w) { return w && !cortas[w]; })
+        .map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+      return letras.slice(0, 3) || '?';
+    }
+
+    function coloresDe(filas) {
+      var mapa = {};
+      var usadas = {};
+      var i = 0;
+      filas.forEach(function (f) {
+        f.celdas.forEach(function (c) {
+          if (!c || mapa[c]) return;
+          var sigla = abreviar(c);
+          var n = 2;
+          while (usadas[sigla]) sigla = abreviar(c) + n++;
+          usadas[sigla] = true;
+          mapa[c] = {
+            sigla: sigla,
+            color: esDisponible(c) ? 'bg-green-200 text-green-900' : APP.COLORES[i++ % APP.COLORES.length]
+          };
+        });
+      });
+      return mapa;
+    }
+
+    function cargarTablero() {
+      var contenedor = el('tabContenedor');
+      var taller = el('tabTaller').value;
+      var anio = el('tabAnio').value;
+      var mes = el('tabMes').value;
+      el('tabMensaje').textContent = 'Cargando...';
+      el('btnTabDescargar').disabled = true;
+      estado.tablero = null;
+      llamar('pd_tablero', { taller: taller, anio: anio, mes: mes })
+        .then(function (r) {
+          if (!r || !r.ok) throw new Error((r && r.error) || 'No se pudo cargar el tablero.');
+          if (el('tabTaller').value !== taller || el('tabAnio').value !== anio || el('tabMes').value !== mes) return;
+          estado.tablero = { taller: taller, anio: anio, mes: mes, dias: r.dias, filas: r.filas };
+          renderTablero();
+        })
+        .catch(function (e) {
+          if (e.sesion) return;
+          vaciar(contenedor);
+          vaciar(el('tabLeyenda'));
+          el('tabMensaje').textContent = e.red ? 'El tablero necesita señal. Tocá Sincronizar cuando tengas conexión.' : mensaje(e);
+        });
+    }
+
+    function renderTablero() {
+      var t = estado.tablero;
+      var contenedor = el('tabContenedor');
+      var leyenda = el('tabLeyenda');
+      vaciar(contenedor);
+      vaciar(leyenda);
+      if (!t.filas.length) {
+        el('tabMensaje').textContent = 'No hay equipos en ' + t.taller + ' en ' + APP.MESES[t.mes - 1] + ' ' + t.anio + '.';
+        return;
+      }
+      el('tabMensaje').textContent = t.filas.length + ' equipo(s). Tocá un número para ver su historial.';
+      el('btnTabDescargar').disabled = false;
+
+      var colores = coloresDe(t.filas);
+      Object.keys(colores).forEach(function (c) {
+        leyenda.appendChild(crear('span', 'px-2 py-1 rounded font-medium ' + colores[c].color, colores[c].sigla + ' = ' + c));
+      });
+
+      var tabla = crear('table', 'text-xs border-collapse');
+      var filaCab = crear('tr');
+      filaCab.appendChild(crear('th', 'fija bg-slate-100 px-2 py-2 text-left border border-slate-200 whitespace-nowrap', 'Equipo'));
+      for (var d = 1; d <= t.dias; d++) filaCab.appendChild(crear('th', 'bg-slate-100 px-1 py-2 border border-slate-200 min-w-[30px]', String(d)));
+      var cab = crear('thead');
+      cab.appendChild(filaCab);
+      tabla.appendChild(cab);
+
+      var cuerpo = crear('tbody');
+      t.filas.forEach(function (f) {
+        var fila = crear('tr');
+        var th = crear('th', 'fija bg-white px-2 py-1 text-left border border-slate-200 font-normal max-w-[150px]');
+        var enlace = crear('button', 'block font-semibold text-blue-700 underline text-left', f.equipo);
+        enlace.type = 'button';
+        enlace.addEventListener('click', function () { verHistorial(f.equipo); });
+        th.appendChild(enlace);
+        th.appendChild(crear('span', 'block text-slate-500 truncate', f.tipo));
+        fila.appendChild(th);
+        f.celdas.forEach(function (c) {
+          var td = crear('td', 'border border-slate-200 text-center font-semibold ' + (c ? colores[c].color : ''), c ? colores[c].sigla : '');
+          if (c) td.title = c;
+          fila.appendChild(td);
+        });
+        cuerpo.appendChild(fila);
+      });
+      tabla.appendChild(cuerpo);
+      contenedor.appendChild(tabla);
+    }
+
+    function descargarTablero() {
+      var t = estado.tablero;
+      if (!t) return;
+      var cab = ['Equipo', 'Tipo de Equipo'];
+      for (var d = 1; d <= t.dias; d++) cab.push(d);
+      var filas = t.filas.map(function (f) { return [f.equipo, f.tipo].concat(f.celdas); });
+      descargarExcel('Tablero', [cab].concat(filas), 'Tablero ' + t.taller + ' ' + t.anio + '-' + dos(Number(t.mes)) + '.xlsx',
+        el('tabMensaje'));
+    }
+
+    /* ---------- Consulta ---------- */
+
+    function verHistorial(equipo) {
+      el('conEquipo').value = equipo;
+      el('conTaller').selectedIndex = 0;
+      el('conEstado').selectedIndex = 0;
+      el('conDesde').value = '';
+      el('conHasta').value = '';
+      irATab('Consulta');
+      consultar();
+    }
+
+    function consultar(e) {
+      if (e) e.preventDefault();
+      var boton = el('btnBuscar');
+      boton.disabled = true;
+      el('btnConDescargar').disabled = true;
+      el('conMensaje').textContent = 'Buscando...';
+      vaciar(el('conLista'));
+      llamar('pd_consulta', { filtros: {
+        taller: el('conTaller').value, estado: el('conEstado').value, equipo: el('conEquipo').value,
+        desde: el('conDesde').value, hasta: el('conHasta').value
+      } })
+        .then(function (r) {
+          if (!r || !r.ok) throw new Error((r && r.error) || 'No se pudo consultar.');
+          estado.consulta = r.filas;
+          renderConsulta();
+        })
+        .catch(function (err) {
+          if (err.sesion) return;
+          el('conMensaje').textContent = err.red ? 'La consulta necesita señal. Intentá de nuevo cuando tengas conexión.' : mensaje(err);
+        })
+        .then(function () { boton.disabled = false; });
+    }
+
+    function renderConsulta() {
+      var filas = estado.consulta;
+      var ul = el('conLista');
+      vaciar(ul);
+      el('btnConDescargar').disabled = !filas.length;
+      if (!filas.length) {
+        el('conMensaje').textContent = 'No hay registros con esos filtros.';
+        return;
+      }
+      el('conMensaje').textContent = filas.length + ' registro(s).' +
+        (filas.length > APP.MAX_EN_CONSULTA ? ' Se muestran los ' + APP.MAX_EN_CONSULTA + ' más nuevos; el Excel trae todos.' : '');
+      filas.slice(0, APP.MAX_EN_CONSULTA).forEach(function (f) {
+        var li = crear('li', 'bg-white rounded-lg shadow-sm p-3');
+        li.appendChild(crear('p', 'font-semibold', f.equipo + ' · ' + f.estado));
+        li.appendChild(crear('p', 'text-sm text-slate-600', f.tipo));
+        li.appendChild(crear('p', 'text-sm text-slate-600', f.fecha + ' · ' + f.taller + (f.proveedor ? ' · ' + f.proveedor : '')));
+        if (f.descripcion) li.appendChild(crear('p', 'text-sm mt-1 whitespace-pre-line', f.descripcion));
+        if (f.usuario) li.appendChild(crear('p', 'text-xs text-slate-500 mt-1', f.usuario + (f.telefono ? ' · ' + f.telefono : '')));
+        ul.appendChild(li);
+      });
+    }
+
+    function descargarConsulta() {
+      var cab = ['Fecha', 'Equipo', 'Tipo de Equipo', 'Estado', 'Usuario', 'Telefono de contacto', 'Descripción', 'Taller', 'Proveedor'];
+      var filas = estado.consulta.map(function (f) {
+        return [f.fecha, f.equipo, f.tipo, f.estado, f.usuario, f.telefono, f.descripcion, f.taller, f.proveedor];
+      });
+      descargarExcel('Parte diario', [cab].concat(filas), 'Parte diario ' + perfil().usuario + '.xlsx', el('conMensaje'));
+    }
+
+    /* ---------- Excel: la librería se descarga solo al usarla ---------- */
+
+    function cargarLibreriaExcel() {
+      if (window.XLSX) return Promise.resolve();
+      return new Promise(function (resolver, rechazar) {
+        var s = document.createElement('script');
+        s.src = APP.XLSX_URL;
+        s.integrity = APP.XLSX_SRI;
+        s.crossOrigin = 'anonymous';
+        s.onload = resolver;
+        s.onerror = function () { rechazar(new Error('No se pudo preparar la descarga. Revisá tu conexión.')); };
+        document.head.appendChild(s);
+      });
+    }
+
+    function descargarExcel(hoja, filas, archivo, nodoMensaje) {
+      cargarLibreriaExcel()
+        .then(function () {
+          var libro = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(libro, XLSX.utils.aoa_to_sheet(filas), hoja);
+          XLSX.writeFile(libro, archivo);
+        })
+        .catch(function (e) { nodoMensaje.textContent = mensaje(e); });
+    }
+
+    /* ---------- Avisos del proveedor (jefe de taller) ---------- */
+
+    function renderAlertas() {
+      var alertas = estado.datos.alertas || [];
+      var ul = el('aleLista');
+      vaciar(ul);
+      el('aleMensaje').textContent = alertas.length ? alertas.length + ' aviso(s) pendiente(s).' : 'No hay avisos pendientes.';
+      alertas.forEach(function (a) {
+        var li = crear('li', 'bg-white rounded-xl shadow-sm p-4');
+        li.appendChild(crear('p', 'font-bold', a.equipo + ' · ' + a.estado));
+        li.appendChild(crear('p', 'text-sm text-slate-600', a.tipo));
+        li.appendChild(crear('p', 'text-sm text-slate-600', a.taller + ' · ' + a.proveedor + ' · ' + a.fecha));
+        if (a.descripcion) li.appendChild(crear('p', 'text-sm mt-1 whitespace-pre-line', a.descripcion));
+        var cambia = estado.datos.estados.some(function (s) { return iguales(s, a.estado) && !esEnProveedor(s); });
+        li.appendChild(crear('p', 'text-xs text-slate-500 mt-2', cambia
+          ? 'Aplicar pasa el equipo a "' + a.estado + '".'
+          : 'Aplicar deja el equipo "' + estado.datos.enProveedor + '" y anota este aviso en su historial.'));
+        var botones = crear('div', 'grid grid-cols-2 gap-2 mt-3');
+        var bAplicar = crear('button', 'tap rounded-lg bg-green-600 text-white font-bold active:bg-green-700 disabled:opacity-60', 'Aplicar');
+        var bDescartar = crear('button', 'tap rounded-lg border border-slate-300 font-medium active:bg-slate-100 disabled:opacity-60', 'Descartar');
+        bAplicar.type = 'button';
+        bDescartar.type = 'button';
+        bAplicar.addEventListener('click', function () { resolverAlerta(a.id, 'aplicar', [bAplicar, bDescartar]); });
+        bDescartar.addEventListener('click', function () { resolverAlerta(a.id, 'descartar', [bAplicar, bDescartar]); });
+        botones.appendChild(bAplicar);
+        botones.appendChild(bDescartar);
+        li.appendChild(botones);
+        ul.appendChild(li);
+      });
+    }
+
+    function resolverAlerta(id, decision, botones) {
+      botones.forEach(function (b) { b.disabled = true; });
+      llamar('pd_alerta', { id: id, decision: decision })
+        .then(function (r) {
+          if (!r || !r.ok) el('aleMensaje').textContent = (r && r.error) || 'No se pudo resolver el aviso.';
+          return refrescarDatos().then(function () {
+            if (r && r.ok) el('aleMensaje').textContent = '✔ Aviso ' + (decision === 'aplicar' ? 'aplicado' : 'descartado') + '. ' + el('aleMensaje').textContent;
+            else if (r) el('aleMensaje').textContent = r.error;
+          });
+        })
+        .catch(function (e) {
+          if (e.sesion) return;
+          el('aleMensaje').textContent = e.red ? 'Resolver un aviso necesita señal. Intentá de nuevo cuando tengas conexión.' : mensaje(e);
+          botones.forEach(function (b) { b.disabled = false; });
+        });
+    }
+
+    /* ---------- Inicio ---------- */
+
+    function actualizarReloj() {
+      if (!estado.editandoId) el('fecha').textContent = formatoFecha(Date.now());
+    }
+
+    el('formLogin').addEventListener('submit', ingresar);
+    el('btnSalir').addEventListener('click', salir);
+    el('btnSync').addEventListener('click', sincronizar);
+    el('form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      mostrar(el('resultado'), false);
+      var eraEdicion = !!estado.editandoId;
+      agregarDesdeFormulario().then(function (ok) {
+        if (!ok) return;
+        resultado('local', eraEdicion
+          ? '✔ Cambios guardados en el celular. Tocá Enviar todo para mandarlo.'
+          : '✔ Registro guardado en el celular. Podés agregar otro o tocar Enviar todo.');
+        window.scrollTo(0, 0);
+      });
+    });
+    el('estadoSel').addEventListener('change', actualizarCampos);
+    el('taller').addEventListener('change', actualizarCampos);
+    el('btnCancelarEdicion').addEventListener('click', function () {
+      salirDeEdicion();
+      limpiarFormulario();
+      renderLista();
+    });
+    el('btnEnviar').addEventListener('click', onEnviarTodo);
+    ['tabTaller', 'tabMes', 'tabAnio'].forEach(function (id) { el(id).addEventListener('change', cargarTablero); });
+    el('btnTabDescargar').addEventListener('click', descargarTablero);
+    el('formConsulta').addEventListener('submit', consultar);
+    el('btnConDescargar').addEventListener('click', descargarConsulta);
+    configurarBuscador();
+    configurarSelectoresTablero();
+
+    window.addEventListener('online', function () {
+      marcarConexion(true);
+      if (estado.token) refrescarDatos().then(function () { return enviarCola(false); }).catch(function () {});
+    });
+    window.addEventListener('offline', function () { marcarConexion(false); });
+    setInterval(function () {
+      actualizarReloj();
+      if (estado.token && !estado.enviando && estado.pendientes.some(function (p) { return p.enCola && !p.error; })) enviarCola(false);
+    }, APP.REINTENTO_MS);
+
+    actualizarReloj();
+    marcarConexion(navigator.onLine);
+
+    var guardada = leerSesion();
+    if (guardada && guardada.token && guardada.datos) {
+      estado.token = guardada.token;
+      estado.datos = guardada.datos;
+      iniciarApp()
+        .then(refrescarDatos)
+        .then(function () { return enviarCola(false); })
+        .catch(function () {});
+    } else {
+      verLogin('');
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    }
+  </script>
+</body>
+</html>
