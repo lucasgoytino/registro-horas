@@ -3,13 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="theme-color" content="#16a34a">
+  <meta name="theme-color" content="#102B52">
   <title>Parte diario PECOM</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script src="config.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="tema.js"></script>
+  <link rel="stylesheet" href="tema.css">
   <style>
     .tap { min-height: 48px; }
     input, select, textarea { font-size: 16px; }
@@ -35,15 +37,15 @@
           class="tap w-full px-3 rounded-lg border border-slate-300">
       </div>
       <button id="btnIngresar" type="submit"
-        class="tap w-full py-3 rounded-xl bg-green-600 text-white text-lg font-bold shadow-md active:bg-green-700 disabled:opacity-60">Ingresar</button>
+        class="tap w-full py-3 rounded-xl bg-pecom-azul text-white text-lg font-bold shadow-md active:bg-pecom-marino disabled:opacity-60">Ingresar</button>
       <div id="errorLogin" role="alert" class="hidden rounded-lg bg-red-50 border border-red-300 text-red-700 p-3 text-sm whitespace-pre-line"></div>
     </form>
   </main>
 
   <!-- Aplicación -->
   <div id="vApp" class="hidden">
-    <header class="sticky top-0 z-30 bg-white border-b border-slate-200">
-      <div class="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between gap-2">
+    <header class="sticky top-0 z-30 bg-white pecom-linea">
+      <div class="pecom-barra"><div class="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between gap-2">
         <div class="min-w-0">
           <a href="index.html" class="text-xs font-medium text-blue-700">&#x2190; Inicio</a>
           <h1 id="txtNombre" class="text-base font-bold leading-tight truncate"></h1>
@@ -53,13 +55,14 @@
           </p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <button id="btnSalir" type="button" class="tap px-3 rounded-lg text-sm font-medium text-slate-600 active:bg-slate-100">Salir</button>
+          <button id="btnSalir" type="button" class="tap px-3 rounded-lg text-sm font-medium ">Salir</button>
           <button id="btnSync" type="button" aria-label="Sincronizar listas y enviar pendientes"
             class="tap min-w-[48px] px-3 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium flex items-center gap-2 active:bg-slate-100 disabled:opacity-60">
             <span id="iconSync" aria-hidden="true" class="text-xl leading-none">&#x21bb;</span>
             <span class="text-sm">Sincronizar</span>
           </button>
         </div>
+      </div>
       </div>
       <nav id="tabs" class="max-w-4xl mx-auto px-2 flex gap-1 overflow-x-auto"></nav>
     </header>
@@ -144,7 +147,7 @@
         </div>
 
         <button id="btnEnviar" type="button"
-          class="tap w-full mt-5 py-4 rounded-xl bg-green-600 text-white text-lg font-bold shadow-md active:bg-green-700 disabled:opacity-60">Enviar todo</button>
+          class="tap w-full mt-5 py-4 rounded-xl bg-pecom-azul text-white text-lg font-bold shadow-md active:bg-pecom-marino disabled:opacity-60">Enviar todo</button>
         <div id="resultado" role="status" aria-live="polite" class="hidden mt-3 rounded-xl p-4 font-semibold whitespace-pre-line"></div>
       </section>
 
@@ -195,7 +198,7 @@
             <input id="conHasta" type="date" class="tap w-full px-2 rounded-lg border border-slate-300 bg-white">
           </div>
           <div class="col-span-2 sm:col-span-1 flex gap-2 items-end">
-            <button id="btnBuscar" type="submit" class="tap flex-1 rounded-lg bg-green-600 text-white font-bold active:bg-green-700 disabled:opacity-60">Buscar</button>
+            <button id="btnBuscar" type="submit" class="tap flex-1 rounded-lg bg-pecom-azul text-white font-bold active:bg-pecom-marino disabled:opacity-60">Buscar</button>
             <button id="btnConDescargar" type="button" disabled
               class="tap flex-1 rounded-lg border-2 border-blue-600 text-blue-700 text-sm font-semibold active:bg-blue-50 disabled:opacity-50">Excel</button>
           </div>
@@ -508,7 +511,7 @@
       tabsDisponibles().forEach(function (t) {
         var activo = estado.tab === t.id;
         var b = crear('button', 'tap px-4 text-sm font-semibold whitespace-nowrap border-b-2 ' +
-          (activo ? 'border-green-600 text-green-700' : 'border-transparent text-slate-600'), t.texto);
+          (activo ? 'border-pecom-azul text-pecom-azul' : 'border-transparent text-slate-600'), t.texto);
         b.type = 'button';
         if (activo) b.setAttribute('aria-current', 'page');
         if (t.id === 'Alertas' && estado.datos.alertas && estado.datos.alertas.length) {
@@ -1222,7 +1225,7 @@
           ? 'Aplicar pasa el equipo a "' + a.estado + '".'
           : 'Aplicar deja el equipo "' + estado.datos.enProveedor + '" y anota este aviso en su historial.'));
         var botones = crear('div', 'grid grid-cols-2 gap-2 mt-3');
-        var bAplicar = crear('button', 'tap rounded-lg bg-green-600 text-white font-bold active:bg-green-700 disabled:opacity-60', 'Aplicar');
+        var bAplicar = crear('button', 'tap rounded-lg bg-pecom-azul text-white font-bold active:bg-pecom-marino disabled:opacity-60', 'Aplicar');
         var bDescartar = crear('button', 'tap rounded-lg border border-slate-300 font-medium active:bg-slate-100 disabled:opacity-60', 'Descartar');
         bAplicar.type = 'button';
         bDescartar.type = 'button';

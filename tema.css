@@ -1,0 +1,32 @@
+/* Plantilla Institucional PECOM I&C 2026: títulos en Exo 2, texto en Arial */
+@font-face {
+  font-family: 'Exo 2';
+  src: url('exo2.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+body { font-family: Arial, Helvetica, sans-serif; background-color: #F2F2F2; color: #102B52; }
+h1, h2, body button, nav a { font-family: 'Exo 2', Arial, Helvetica, sans-serif; }
+h1 { color: #1A325E; }
+
+/* Barra superior con el degradé azul de la plantilla */
+.pecom-barra { background: linear-gradient(90deg, #102B52 0%, #005489 70%, #57C5E7 100%); }
+.pecom-barra a, .pecom-barra h1, .pecom-barra p { color: #FFFFFF; }
+.pecom-barra #btnSalir { color: #FFFFFF; }
+.pecom-barra #btnSalir:active { background-color: rgba(255, 255, 255, 0.2); }
+
+/* Línea celeste de la plantilla */
+.pecom-linea { border-bottom: 1px solid #71CFEB; }
+
+/* Portada */
+.pecom-portada { background: linear-gradient(90deg, #102B52 0%, #005489 66%, #57C5E7 100%); color: #FFFFFF; }
+.pecom-portada h1, .pecom-portada p { color: #FFFFFF; }
+.pecom-portada-dibujo { display: block; width: 100%; height: auto; opacity: 0.55; }
+
+/* Foco visible al navegar con teclado */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #005489;
+  outline-offset: 2px;
+}
+.pecom-barra a:focus-visible, .pecom-barra button:focus-visible { outline-color: #FFFFFF; }

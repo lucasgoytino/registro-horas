@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="theme-color" content="#16a34a">
+  <meta name="theme-color" content="#102B52">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="PECOM Equipos">
   <title>PECOM Equipos</title>
@@ -11,23 +11,30 @@
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="tema.js"></script>
+  <link rel="stylesheet" href="tema.css">
   <style>
     .tap { min-height: 48px; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
-  <main class="max-w-md mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-1">PECOM Equipos</h1>
-    <p class="text-slate-600 mb-6">¿Qué querés hacer?</p>
+  <header class="pecom-portada">
+    <div class="max-w-md mx-auto px-4 pt-8 pb-5">
+      <h1 class="text-3xl font-extrabold">PECOM Equipos</h1>
+      <p class="mt-1">¿Qué querés hacer?</p>
+    </div>
+    <img src="planta.png" alt="" class="pecom-portada-dibujo">
+  </header>
 
+  <main class="max-w-md mx-auto px-4 py-6">
     <nav class="space-y-4">
-      <a href="horas.html" class="tap block bg-white rounded-xl shadow-sm p-5 border-2 border-transparent active:border-green-600">
-        <span class="block text-lg font-bold">Registro de horas</span>
-        <span class="block text-sm text-slate-600 mt-1">Cargá las horas de funcionamiento de un equipo. No necesita usuario.</span>
+      <a href="horas.html" class="tap block bg-white rounded-xl shadow-sm p-5 border-2 border-transparent active:border-pecom-azul">
+        <span class="block text-lg font-bold text-pecom-titulo">Registro de horas</span>
+        <span class="block text-sm text-slate-600 mt-1" style="font-family: Arial, Helvetica, sans-serif">Cargá las horas de funcionamiento de un equipo. No necesita usuario.</span>
       </a>
-      <a href="parte.html" class="tap block bg-white rounded-xl shadow-sm p-5 border-2 border-transparent active:border-green-600">
-        <span class="block text-lg font-bold">Parte diario de equipos</span>
-        <span class="block text-sm text-slate-600 mt-1">Estado de los equipos en los talleres. Requiere usuario y contraseña.</span>
+      <a href="parte.html" class="tap block bg-white rounded-xl shadow-sm p-5 border-2 border-transparent active:border-pecom-azul">
+        <span class="block text-lg font-bold text-pecom-titulo">Parte diario de equipos</span>
+        <span class="block text-sm text-slate-600 mt-1" style="font-family: Arial, Helvetica, sans-serif">Estado de los equipos en los talleres. Requiere usuario y contraseña.</span>
       </a>
     </nav>
   </main>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="theme-color" content="#16a34a">
+  <meta name="theme-color" content="#102B52">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Horas PECOM">
   <title>Registro de Horas PECOM</title>
@@ -12,6 +12,8 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <script src="config.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="tema.js"></script>
+  <link rel="stylesheet" href="tema.css">
   <style>
     .tap { min-height: 48px; }
     input, select { font-size: 16px; }
@@ -22,7 +24,7 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen">
 
-  <header class="sticky top-0 z-10 bg-white border-b border-slate-200">
+  <header class="sticky top-0 z-10 pecom-barra">
     <div class="max-w-xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
       <div class="min-w-0">
         <a href="index.html" class="text-xs font-medium text-blue-700">&#x2190; Inicio</a>
@@ -178,7 +180,7 @@
     </section>
 
     <button id="btnEnviar" type="button"
-      class="tap w-full mt-5 py-4 rounded-xl bg-green-600 text-white text-lg font-bold shadow-md active:bg-green-700 disabled:opacity-60">
+      class="tap w-full mt-5 py-4 rounded-xl bg-pecom-azul text-white text-lg font-bold shadow-md active:bg-pecom-marino disabled:opacity-60">
       Enviar todo
     </button>
 
